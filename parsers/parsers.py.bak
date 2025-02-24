@@ -1,0 +1,196 @@
+# EVENT PARSERS
+# Here you can create small parsers that can consume, change or discard the events before
+# they reach the LLM. This is useful for events that require to access another source
+# of information, or events that have another property that can invalidate them
+
+import json
+import os
+from config import JOURNAL_DIRECTORY
+
+
+def receiveText_parser(entry):
+    j_message = entry.get("Message")
+
+    if (
+        j_message.startswith("$STATION_")
+        or j_message.startswith("$DockingChatter_")
+        or j_message.startswith("$COMMS_entered")
+        or j_message.startswith("$Commuter_AuthorityScan")
+        or j_message.startswith("$CruiseLiner_SCPatrol")
+    ):
+        print(f"Ignoring the message type {j_message}")
+        return False
+
+    return entry
+
+
+def market_parser(entry):
+    print("Reading the market files")
+    market_store = os.path.join(JOURNAL_DIRECTORY, "Market.json")
+
+    try:
+        with open(market_store, "r") as file:
+            market_content = json.load(file)
+    except FileNotFoundError:
+        print("Market file not found.")
+        return []
+    except json.JSONDecodeError:
+        print("Error decoding JSON.")
+        return []
+
+    # Access the list of items
+    items = market_content.get("Items", [])
+
+    buy_goods = [
+        {
+            "Name_Localised": entry.get("Name_Localised"),
+            "Rare": entry.get("Rare"),
+            "Galactic_Average": entry.get("MeanPrice", 0) - entry.get("BuyPrice", 0),
+        }
+        for entry in items
+        if entry.get("Producer") is True
+    ]
+
+    # Sort the buy_goods based on GalacticAverage
+    buy_goods.sort(key=lambda x: x.get("Galactic_Average", 0), reverse=True)
+    buy_goods = buy_goods[:3]
+
+    rare_goods = [
+        {
+            "Name_Localised": entry.get("Name_Localised"),
+            "Rare": entry.get("Rare"),
+            "Galactic_Average": entry.get("MeanPrice", 0) - entry.get("BuyPrice", 0),
+        }
+        for entry in items
+        if entry.get("Rare") is True and entry.get("Producer") is True
+    ]
+
+    sell_goods = [
+        {
+            "Name_Localised": entry.get("Name_Localised"),
+            "Demand": entry.get("Demand", 0),
+            "Galactic_Average": entry.get("SellPrice", 0) - entry.get("MeanPrice", 0),
+        }
+        for entry in items
+        if entry.get("Consumer") is True and entry.get("Demand", 0) > 0
+    ]
+
+    # Sort the sell_goods based on Galactic_Average, reverse order
+    sell_goods.sort(
+        key=lambda x: (x.get("Galactic_Average", 0), x.get("Demand", 0)), reverse=True
+    )
+    sell_goods = sell_goods[:3]
+
+    entry["buy_opportunities"] = buy_goods
+    entry["sell_opportunities"] = sell_goods
+    entry["rare_goods"] = rare_goods
+    return entry
+
+
+def target_parser(entry):
+    # scan_stage = entry.get("ScanStage")
+
+    if entry.get("TargetLocked") is False:
+        print("Target lost, ignoring.")
+        return False
+
+    if not entry.get("LegalStatus"):
+        print("Waiting for legal status.")
+        return False
+
+    if entry.get("LegalStatus") == "Clean":
+        print("Target clean, ignoring.")
+        return False
+
+    print("Target is not clean, checking for damage.")
+
+    # Cleanup the entry
+    entry.pop("Faction", None)
+    entry.pop("TargetLocked", None)
+    entry.pop("ScanStage", None)
+    # entry.pop("Ship_Localised", None)
+    entry.pop("PilotName_Localised", None)
+
+    return entry
+
+
+def fsdjump_parser(entry):
+    reputed_factions = [
+        {"name": faction["Name"], "reputation": faction["MyReputation"]}
+        for faction in entry["Factions"]
+        if faction["MyReputation"] > 1
+    ]
+
+    # Cleanup the entry
+    entry.pop("Factions", None)
+    entry.pop("Multicrew", None)
+    entry.pop("StarPos", None)
+    entry.pop("SystemEconomy", None)
+    entry.pop("SystemGovernment", None)
+    entry.pop("SystemSecondEconomy", None)
+    entry.pop("SystemSecurity", None)
+
+    entry["my_reputation"] = reputed_factions
+    return entry
+
+
+def fsdtarget_parser(entry):
+    if entry.get("StarClass") in ["K", "G", "B", "F", "O", "A", "M"]:
+        entry["IsScoopeable"] = True
+    else:
+        entry["IsScoopeable"] = False
+
+    entry.pop("SystemAddress", None)
+    return entry
+
+
+EVENT_PARSERS = {
+    "ReceiveText": {
+        "function": receiveText_parser,
+        "context": """
+            A meesage has been broadcasted.
+            Please, don't read text messages, just sumarize them, and only if they are unread.
+            On Message "$Trader_OnEnemyShipDetection" do this: notify me that might be some danger in the area
+        """,
+    },
+    "Market": {
+        "function": market_parser,
+        "context": """
+            I'm about to buy or sell something.
+            Tell me about the best products to buy.
+            Note if you see products with a very high demand to sell.
+            Note if there are rare goods.
+            If there are no remarkable products, ignore that information.
+            """,
+    },
+    "FSDJump": {
+        "function": fsdjump_parser,
+        "context": """
+            Our ship just arrived to another system.
+            Provide a summary of the system and the star ot stars type.
+            Note if the star type is dangerous or can't be scouped for fuel, otherwise, ignore this fact.
+            Describe the system allegiance.
+            Describe the system faction and system faction state. Note if I have reputation with the faction.
+            Note if the happiness is low, otherwise, ignore this fact.
+            Describe the system security level.
+            Describe the system economy and population.
+            Notify me if this is the first visit to the system, otherwise, ignore this fact.
+            """,
+    },
+    "FSDTarget": {
+        "function": fsdtarget_parser,
+        "context": """
+            Our ship is targeting a system to jump.
+            Tell me how many jump to reach destination.
+            """,
+    },
+    "ShipTargeted": {
+        "function": target_parser,
+        "context": """
+            This event indicates I targeted a ship for inspection.
+            Notify me if the ship has a bounty above 100000 credits. Do not notify if the bounty is lower.
+            Notify me if the ship has a bad LegalStatus and PilotRank is above average, since the ship can be a threat. Do not notify if the pilot is harmless.
+            Notify me if the ship is damaged, based on low HullHealth and ShieldHealth properties. Do not notify if the ship helath is at 100%.
+            """,
+    },
+}
