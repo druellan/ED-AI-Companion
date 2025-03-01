@@ -240,7 +240,9 @@ def monitor_journal():
                 try:
                     entry = json.loads(line)
                     # Cleanup the entry, getting rid of properties we don't need, like, ever
-                    clean_entry = cleanup_event(entry, ["timestamp", "build"])
+                    clean_entry = cleanup_event(
+                        entry, ["timestamp", "build", "SystemAddress"]
+                    )
                     # print(clean_entry)
 
                     # Start working with the response
@@ -279,11 +281,15 @@ def generate_response(entry):
         return False
 
     if event in EVENT_PARSERS and "context" in EVENT_PARSERS[event]:
-        entry_string = EVENT_PARSERS[event]["context"] + " " + json_to_str(parsed_entry)
+        entry_string = (
+            EVENT_PARSERS[event]["context"]
+            + "Data: "
+            + json_to_compact_text(parsed_entry)
+        )
     else:
-        entry_string = json_to_str(parsed_entry)
+        entry_string = json_to_compact_text(parsed_entry)
 
-    output(parsed_entry, COLOR.CYAN)
+    output(entry_string, COLOR.CYAN)
 
     # If the event is in the list, send it to the AI
     if event in EVENT_LIST:
@@ -412,8 +418,7 @@ def save_status():
 
     set_states(current_status)
 
-
-# HELPERS
+    # HELPERS
 
 
 def output(string, color=None):
@@ -446,6 +451,22 @@ def json_to_str(obj):
     return json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
 
 
+def json_to_compact_text(data):
+    if isinstance(data, dict):
+        parts = [
+            f"{k}={json_to_compact_text(v)}" for k, v in data.items() if v is not None
+        ]
+        return "|".join(parts)
+    elif isinstance(data, list):
+        return "+".join(json_to_compact_text(item) for item in data if item is not None)
+    elif isinstance(data, bool):
+        return "1" if data else "0"
+    elif data is None:
+        return ""
+    else:
+        return str(data).replace(" ", "_")
+
+
 if __name__ == "__main__":
     EVENT_LIST = merge_true_events(
         STARTUP_EVENTS,
@@ -471,7 +492,7 @@ if __name__ == "__main__":
         output(f"Text-to-Speech: type {TTS_TYPE} voice {TTS_EDGE_VOICE}")
 
     output("All systems ready!", COLOR.BRIGHT_GREEN)
-    speak_response("All systems ready!")
+    speak_response("All systems ready.")
 
     init_state()
     monitor_journal()

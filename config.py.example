@@ -13,8 +13,8 @@ LLM_API_KEY = (
 # The primary model to use, and a list of models to use if the primary model fails
 LLM_MODEL_NAME = "google/gemini-2.0-flash-exp:free"
 LLM_MODEL_NAMES = [
-    "sophosympatheia/rogue-rose-103b-v0.2:free",
-    "nvidia/llama-3.1-nemotron-70b-instruct:free",
+    "mistralai/mistral-nemo:free",
+    "cognitivecomputations/dolphin3.0-mistral-24b:free",
 ]
 
 # Use WINDOWS for the built in TTS Windows feature
@@ -47,7 +47,7 @@ TTS_NOTHING_TO_REPORT = False
 # The initial prompt sent to the asistant. Can be anything you want to remark globally. Parsers have their own prompts.
 SYSTEM_PROMPT = """
 You are a computer AI inside my starship in the game Elite Dangerous.
-I'm going to provide you events from the ship journal, in json format, and other relevant data, also in json format.
+I'm going to provide you events from the ship journal and other relevant data, in compact text format.
 Use facts that are related to the game Elite Dangerous and the in-game universe.
 Always talk to me directly as Commander.
 
@@ -64,32 +64,27 @@ Hull integrity is low.
 Threat level is high.
 System security is low.
 A star type is not scoopable
-A star type is dangerous to scoop fuel.
+A star type is of a dangerous type.
+
+# Remember this about stars:
+Type K (Orange star): scoopable for fuel.
+Type G (Yellow star): scoopabl for fuele.
+Type B (Blue-White start): scoopable for fuel.
+Type F (White star): scoopable for fuel.
+Type O (Blue star): scoopable for fuel.
+Type A (Blue-White star): scoopable for fuel.
+Type M (Red Dwarf): scoopable for fuel.
+
+Type L (Brown dwarf): not scoopable for fuel.
+Type T (Brown dwarf): not scoopable for fuel.
+Type Y (Brown dwarf): not scoopable for fuel.
 
 Current ship status and position in the galaxy, use as reference:
 {current_status}
 Note: fuel leves are in units of tons, and the value must be compared to the maximum fuel capacity of the ship.
 
-This is the event in json format to process, remember you can ignore information if instructed or the information is irrelevant:
+This is the event to process, remember you can ignore information if instructed or the information is irrelevant:
 """
-
-# I'm sometimes adding this into the original prompt, sometimes it helps, sometimes it doesn't
-# Remember this about stars:
-# Type K (Orange star): scoopable for fuel.
-# Type G (Yellow star): scoopabl for fuele.
-# Type B (Blue-White start): scoopable for fuel.
-# Type F (White star): scoopable for fuel.
-# Type O (Blue star): scoopable for fuel.
-# Type A (Blue-White star): scoopable for fuel.
-# Type M (Red Dwarf): scoopable for fuel.
-
-# Type L (Brown dwarf): not scoopable for fuel.
-# Type T (Brown dwarf): not scoopable for fuel.
-# Type Y (Brown dwarf): not scoopable for fuel.
-
-# Change to True or False, depending if you want the asistant to react or ignore each event
-# Note that all events are parsed if there is a parser available
-# this setting only avoids the AI reaction
 
 # Startup Events
 STARTUP_EVENTS = {

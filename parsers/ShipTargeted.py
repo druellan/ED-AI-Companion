@@ -28,6 +28,6 @@ def parse(entry):
 CONTEXT = """
 We targeted a ship for inspection.
 Notify me if the ship has a big bounty. Ignore this notification otherwise.
-Notify me if the ship has a bad LegalStatus AND PilotRank is above average. Do not notify if the pilot is harmless.
-Notify me if the ship is damaged, check the HullHealth and ShieldHealth properties. Do not notify if the ship helath is at 100%.
+Notify me if the ship has a bad LegalStatus. Mention if the pilot has a high PilotRank. Ignore this notification otherwise.
+Notify me if the ship is damaged, check the HullHealth and ShieldHealth properties. Do not notify if the ship helath and shield is at 100%.
 """
