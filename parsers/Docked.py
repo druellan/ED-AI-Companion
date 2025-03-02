@@ -1,4 +1,4 @@
-from start import set_states
+from start import add_states
 
 
 def parse(entry):
@@ -9,7 +9,7 @@ def parse(entry):
         }
     }
 
-    set_states(states)
+    add_states(states)
 
     return entry
 

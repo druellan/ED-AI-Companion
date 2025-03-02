@@ -127,11 +127,11 @@ def parse(entry):
 
 
 CONTEXT = """
-We are about to buy or sell something in the dock market.
+We are about to buy or sell something in the market.
 Tell me about opportunities to buy based on the galactic average.
-Tell me if I have cargo to sell, let me know if I can make a profit based on the galactic average.
-Tell me if there are good oportunities to sell. Ignore if the deman and prices are low.
-Note if there are rare goods. If there are no rare goods, do not inform me.
+Tell me if I have cargo to sell, let me know if I can make a profit based on the galactic average, ignore if I have no cargo.
+Tell me if there are good oportunities to sell. Ignore if the galactic average is low.
+Note if there are rare goods, ignore if there are no rare goods.
 """
 
 ## Event Example ##

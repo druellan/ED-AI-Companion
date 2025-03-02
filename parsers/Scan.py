@@ -2,7 +2,7 @@
 
 
 def parse(entry):
-    if entry["ScanType"] == "NavBeaconDetail":
+    if entry["ScanType"] == "NavBeaconDetail" or entry["ScanType"] == "AutoScan":
         notable_planets = [
             "Earth-like body",
             "Water world",

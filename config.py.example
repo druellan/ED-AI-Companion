@@ -8,19 +8,20 @@ JOURNAL_DIRECTORY = os.path.join(
 # Enter the API endpoint of the LLM service you want to use, the API Key and the model
 LLM_ENDPOINT = "https://openrouter.ai/api/v1/"
 LLM_API_KEY = (
-    "[Your_Key]"
+    ""
 )
 # The primary model to use, and a list of models to use if the primary model fails
-LLM_MODEL_NAME = "google/gemini-2.0-flash-exp:free"
+LLM_MODEL_NAME = "google/gemini-2.0-pro-exp-02-05:free"
 LLM_MODEL_NAMES = [
-    "mistralai/mistral-nemo:free",
-    "cognitivecomputations/dolphin3.0-mistral-24b:free",
+    "google/gemini-2.0-flash-exp:free",
 ]
 
 # Use WINDOWS for the built in TTS Windows feature
 # Use EDGE for the Edge Broser/Azure TTS service
-# Note that WINDOWS is used as fallback in case EDGE is not available
-TTS_TYPE = "EDGE"
+TTS_TYPE = "WINDOWS"
+
+# Add effects for the TTS voice
+TTS_EFFECTS = True
 
 # The voice to use for each of the TTS services
 # TTS_WINDOWS_VOICE = "Microsoft Zira Desktop - English (United States)"
@@ -32,7 +33,7 @@ TTS_EDGE_PITCH = "+0Hz"
 # Microsoft Eva (Cortana's voice) is not avaiable in Windows by default,
 # try following this guide to activate it: https://github.com/watermarkhu/enable-microsoft-eva-tts
 TTS_WINDOWS_VOICE = "Microsoft Eva Mobile - English (United States)"
-TTS_WINDOWS_RATE = 170
+TTS_WINDOWS_RATE = 180
 TTS_WINDOWS_VOLUME = 0.7
 
 # List all the Windows voices available in the system
@@ -41,9 +42,6 @@ TTS_WINDOWS_LIST = False
 # The URL to the EDSM API to fetch information about the target system
 EDSM_API = "https://www.edsm.net"
 
-# Read "Nothing to report" the message the ID use to indicate that there is no information.
-TTS_NOTHING_TO_REPORT = False
-
 # The initial prompt sent to the asistant. Can be anything you want to remark globally. Parsers have their own prompts.
 SYSTEM_PROMPT = """
 You are a computer AI inside my starship in the game Elite Dangerous.
@@ -51,22 +49,23 @@ I'm going to provide you events from the ship journal and other relevant data, i
 Use facts that are related to the game Elite Dangerous and the in-game universe.
 Always talk to me directly as Commander.
 
-I wanto you to:
+I wanto you to always:
 Use natural language. Don't build lists. Don't format the responses.
-Warn me about dangers, and tell me why you think there is danger nearby.
-Be as brief as possible, accurate as possible and factual as possible with all the information.
+Be as brief as possible, accurate as possible and factual as possible, triaging the information.
+Warn me about dangers.
 Round numbers.
-You can reply "Nothing to report." if there is no information or you are instructed to ignore or remain silent.
+You can reply "NULL" if there is nothing to report.
 
 Common dangers:
-Fuel level is low.
-Hull integrity is low.
+FuelLevel is low.
+HullHealth is low.
+Shields are offline.
 Threat level is high.
 System security is low.
 A star type is not scoopable
 A star type is of a dangerous type.
 
-# Remember this about stars:
+Remember this about stars:
 Type K (Orange star): scoopable for fuel.
 Type G (Yellow star): scoopabl for fuele.
 Type B (Blue-White start): scoopable for fuel.
@@ -79,12 +78,19 @@ Type L (Brown dwarf): not scoopable for fuel.
 Type T (Brown dwarf): not scoopable for fuel.
 Type Y (Brown dwarf): not scoopable for fuel.
 
-Current ship status and position in the galaxy, use as reference:
+Current ship status, for use as reference:
 {current_status}
-Note: fuel leves are in units of tons, and the value must be compared to the maximum fuel capacity of the ship.
 
-This is the event to process, remember you can ignore information if instructed or the information is irrelevant:
+This is the previous event, just for context:
+{event_previous}
 """
+
+USER_PROMPT = """"
+This is the context and the event to process, remember you can ignore information if instructed or the information is irrelevant:
+{event_new}
+"""
+
+# Change to True or False, depending if you want the asistant to react or ignore each event
 
 # Startup Events
 STARTUP_EVENTS = {
@@ -111,7 +117,7 @@ COMBAT_EVENTS = {
     "ShieldState": True,
     "ShipTargeted": True,
     "SRVDestroyed": True,
-    "UnderAttack": False,
+    "UnderAttack": True,
 }
 
 # Travel Events
@@ -120,7 +126,7 @@ TRAVEL_EVENTS = {
     "ApproachBody": True,
     "Docked": False,
     "DockingCanceled": False,
-    "DockingDenied": True,
+    "DockingDenied": False,
     "DockingGranted": False,
     "DockingRequested": False,
     "DockingTimeout": False,
@@ -133,7 +139,7 @@ TRAVEL_EVENTS = {
     "SupercruiseExit": True,
     "Touchdown": True,
     "Undocked": True,
-    "NavRoute": True,
+    "NavRoute": False,
     "NavRouteClear": False,
 }
 

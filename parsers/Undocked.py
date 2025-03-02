@@ -26,10 +26,10 @@ def parse(entry):
 
 CONTEXT = """
 We undocked from a space port.
-Just mention the cargo, don't mention the total or the units for each cargo, except for drones.
-Notify me if I have less than 10 drones.
-Check for cargo flagged as stolen, notify me wich cargo is flagged.
-Notify me about the fuel level.
+Just mention the cargo, don't mention the total or the units for each cargo.
+Notify me if I have less than 10 limpets, ignore otherwise.
+Check for cargo flagged as stolen or ilegal, ignore otherwise.
+Notify me about the fuel levels.
 """
 
 ## { "timestamp":"2024-08-04T02:08:13Z", "event":"Undocked", "StationName":"Coelho Station", "StationType":"Orbis", "MarketID":128932533, "Taxi":false, "Multicrew":false }

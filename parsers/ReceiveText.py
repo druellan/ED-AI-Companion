@@ -6,18 +6,24 @@
 def parse(entry):
     j_message = entry.get("Message")
 
-    # Ignore some messages
-    if (
-        j_message.startswith("$STATION_")
-        or j_message.startswith("$Docking")
-        or j_message.startswith("$COMMS_entered")
-        or j_message.startswith("$Commuter_AuthorityScan")
-        or j_message.startswith("$CruiseLiner_SCPatrol")
-        or j_message.startswith("$ConvoyWedding_Patrol")
-        # Pirate-specific to ignore
-        or j_message.startswith("$Pirate_OnTargetFleeing01")
-        or j_message.startswith("$Pirate_LargeCargo")
-    ):
+    # Only read these messages type
+    interpret_messages = [
+        "$Trader_OnEnemyShipDetection",
+        "$Miner_OnJumpNoAsteroids",
+        "$STATION_docking_denied",
+        "$DockingChatter",
+        # Combat
+        "$Police_ArriveInvestigate",
+        "$Military_Passthrough",
+        "$Pirate_OnDeclarePiracyAttack",
+        "$BadKarmaCriticalDamage",
+        "$OverwatchCriticalDamage",
+        "$Indirect_EnemyReinforcements",
+        "$Combat_OnKillReward",
+        "$Pirate_Arrival",
+    ]
+
+    if not any(j_message.startswith(msg) for msg in interpret_messages):
         print(f"Ignoring the message type {j_message}")
         return False
 
@@ -26,7 +32,8 @@ def parse(entry):
 
 CONTEXT = """
 A meesage has been broadcasted.
-Sumarize the content of the message.
-On Message "$Trader_OnEnemyShipDetection", notify me that might be some danger in the area.
-Be extra brief about messages from pirates.
+Interpret the message based on "Message" (intention) and "Message_Localised" (content).
+Consider the previous message as context and to avoid repetition.
+Don't read the message content, just interpret it.
+If you think the message is trivial, ignore it.
 """

@@ -14,12 +14,16 @@ import asyncio
 import pyttsx3
 import edge_tts
 from openai import OpenAI
+
 from pygame import mixer
+from pedalboard import Pedalboard, Reverb, Chorus
+import soundfile as sf
 
 # Config.py
 from config import (
     JOURNAL_DIRECTORY,
     SYSTEM_PROMPT,
+    USER_PROMPT,
     LLM_ENDPOINT,
     LLM_API_KEY,
     LLM_MODEL_NAME,
@@ -33,7 +37,7 @@ from config import (
     TTS_EDGE_VOLUME,
     TTS_EDGE_PITCH,
     TTS_TYPE,
-    TTS_NOTHING_TO_REPORT,
+    TTS_EFFECTS,
     STARTUP_EVENTS,
     COMBAT_EVENTS,
     TRAVEL_EVENTS,
@@ -106,11 +110,11 @@ def get_latest_journal_file(directory):
 
 
 # Send event data to the AI API
-def send_event_to_api(event_data):
+def send_event_to_api(event_data, previous_event):
     client = OpenAI(
         base_url=LLM_ENDPOINT,
         api_key=LLM_API_KEY,
-        default_headers={"X-Title": "ED Ship Helper"},
+        default_headers={"X-Title": "ED:AI Companion"},
         timeout=20.0,
     )
 
@@ -121,8 +125,8 @@ def send_event_to_api(event_data):
             "models": LLM_MODEL_NAMES,
         },
         messages=[
-            {"role": "system", "content": get_system_prompt()},
-            {"role": "user", "content": event_data},
+            {"role": "system", "content": get_system_prompt(previous_event)},
+            {"role": "user", "content": get_user_prompt(event_data)},
         ],
         temperature=0.2,
     )
@@ -165,12 +169,36 @@ async def send_local_text_to_voice(text):
         index = None
 
     if index is not None:
-        engine.setProperty("voice", voices[index].id)
-        engine.setProperty("rate", TTS_WINDOWS_RATE)
-        engine.setProperty("volume", TTS_WINDOWS_VOLUME)
+        try:
+            engine.setProperty("voice", voices[index].id)
+            engine.setProperty("rate", TTS_WINDOWS_RATE)
+            engine.setProperty("volume", TTS_WINDOWS_VOLUME)
 
-        engine.say(text)
-        engine.runAndWait()
+            # Save to temporary file instead of speaking directly
+            temp_file = "./tts-temp.mp3"
+            engine.save_to_file(text, temp_file)
+            engine.runAndWait()
+
+            # Add effects if enabled
+            if TTS_EFFECTS:
+                add_audio_effects(temp_file)
+
+            # Play with pygame mixer
+            mixer.init()
+            mixer.music.load(temp_file)
+            mixer.music.play()
+
+            while mixer.music.get_busy():
+                time.sleep(0.1)
+
+            mixer.music.unload()
+            mixer.quit()
+
+            # Cleanup
+            os.remove(temp_file)
+
+        except Exception as e:
+            output(f"Windows TTS error: {str(e)}", COLOR.RED)
     else:
         output("Specified TTS voice not found.", COLOR.RED)
 
@@ -186,18 +214,27 @@ async def send_edge_text_to_voice(text):
             text, voice, rate=rate, volume=volume, pitch=pitch
         )
 
-        await communicate.save("./edge-tts-temp.mp3")
+        temp_file = "./tts-temp.mp3"
+
+        await communicate.save(temp_file)
+
+        # Add effects to the audio file
+        if TTS_EFFECTS:
+            add_audio_effects(temp_file)
+
+        # Play with pygame mixer
         mixer.init()
-        mixer.music.load("./edge-tts-temp.mp3")
+        mixer.music.load(temp_file)
         mixer.music.play()
 
-        # Wait for playback to finish
         while mixer.music.get_busy():
             time.sleep(0.1)
 
         mixer.music.unload()
         mixer.quit()
-        os.remove("./edge-tts-temp.mp3")
+
+        # Cleanup
+        os.remove(temp_file)
 
     except Exception as e:
         output(f"Edge TTS error: {str(e)}", COLOR.RED)
@@ -205,6 +242,25 @@ async def send_edge_text_to_voice(text):
         if TTS_TYPE != "WINDOWS":
             output("Falling back to Windows TTS", COLOR.YELLOW)
             await send_local_text_to_voice(text)
+
+
+def add_audio_effects(audio):
+    # Load the audio file
+    audio, sample_rate = sf.read("./tts-temp.mp3")
+
+    # Create an effects board
+    board = Pedalboard(
+        [
+            Reverb(room_size=0.1, wet_level=0.1),
+            Chorus(rate_hz=2.0, depth=0.25),  # Add chorus effect
+        ]
+    )
+
+    # Apply effects
+    effected = board(audio, sample_rate)
+
+    # Save the processed audio
+    sf.write("./tts-temp.mp3", effected, sample_rate)
 
 
 # Monitor the journal files for new events
@@ -215,6 +271,8 @@ def monitor_journal():
         return
 
     output(f"Monitoring journal file: {current_journal}")
+
+    last_event = None
 
     with open(current_journal, "r") as file:
         file.seek(0, os.SEEK_END)
@@ -239,18 +297,28 @@ def monitor_journal():
             if line:
                 try:
                     entry = json.loads(line)
-                    # Cleanup the entry, getting rid of properties we don't need, like, ever
-                    clean_entry = cleanup_event(
-                        entry, ["timestamp", "build", "SystemAddress"]
-                    )
-                    # print(clean_entry)
 
-                    # Start working with the response
-                    response = generate_response(clean_entry)
+                    # Create a deduplication key by removing timestamp
+                    current_event = entry.copy()
+                    current_event.pop("timestamp", None)
 
-                    if response:
-                        # Send the text to the TTS engine
-                        speak_response(response)
+                    # Check if this is a duplicate event
+                    if current_event != last_event:
+                        # Process the event normally
+                        clean_entry = cleanup_event(
+                            entry, ["timestamp", "build", "SystemAddress"]
+                        )
+
+                        update_state(clean_entry)
+                        response = generate_response(clean_entry, last_event)
+
+                        if response:
+                            speak_response(response)
+
+                        # Update last event tracking
+                        last_event = current_event
+                    else:
+                        output("Skipping duplicate event", COLOR.YELLOW)
 
                 except json.JSONDecodeError:
                     pass
@@ -259,15 +327,12 @@ def monitor_journal():
 
 
 # Operate on the received event, check if we have specific parsers for it
-def generate_response(entry):
+def generate_response(entry, previous_entry):
     event = entry.get("event", False)
     output(f"Received event: {event}", COLOR.BRIGHT_CYAN)
 
     if not event:
         return
-
-    # Let's save the current status of the ship
-    save_status()
 
     # Check if the event has a parser
     if event in EVENT_PARSERS:
@@ -294,7 +359,8 @@ def generate_response(entry):
     # If the event is in the list, send it to the AI
     if event in EVENT_LIST:
         output(f"Reacting to event: {event}", COLOR.BRIGHT_CYAN)
-        response_text = send_event_to_api(entry_string)
+        previous_entry = json_to_compact_text(previous_entry)
+        response_text = send_event_to_api(entry_string, previous_entry)
 
     else:
         output(f"AI ignoring event: {event}", COLOR.BRIGHT_CYAN)
@@ -302,10 +368,8 @@ def generate_response(entry):
 
     # Output the AI response
     if response_text:
-        if response_text.startswith("Nothing to report."):
-            output(f"AI response: {response_text}", COLOR.CYAN)
-            if TTS_NOTHING_TO_REPORT is True:
-                return response_text
+        if response_text.startswith("NULL"):
+            output("AI ignored the info.", COLOR.CYAN)
             return False
         output(f"AI response: {response_text}", COLOR.CYAN)
         return response_text
@@ -323,33 +387,21 @@ def speak_response(response):
 
 
 # Get the main prompt and enrich it with the current status
-def get_system_prompt():
+def get_system_prompt(previous_event=""):
     # Replace status placeholder in system prompt
     global_status = get_state_all()
-    system_prompt = SYSTEM_PROMPT.replace("{current_status}", str(global_status))
+    system_prompt = SYSTEM_PROMPT.replace(
+        "{current_status}", str(global_status)
+    ).replace("{event_previous}", str(previous_event))
 
     return system_prompt
 
 
-# Save information to the ship-state.json file
-def set_states(status):
-    state_file_path = "ship-state.json"
+# Get the main prompt and add the context
+def get_user_prompt(context):
+    user_prompt = USER_PROMPT.replace("{event_new}", str(context))
 
-    # Load existing data or create empty dict
-    try:
-        with open(state_file_path, "r") as file:
-            data = json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        data = {}
-
-    # Update status while preserving other data
-    data.update(status)
-
-    # Write back to file
-    with open(state_file_path, "w") as file:
-        json.dump(data, file)
-
-    return True
+    return user_prompt
 
 
 # Get all the information from the ship-state.json file
@@ -382,11 +434,17 @@ def init_state():
                     if entry.get("event") == "LoadGame":
                         init_info = {
                             "Ship": entry.get("Ship"),
+                            "ShipName": entry.get("ShipName"),
                             "FuelLevel": entry.get("FuelLevel"),
                             "FuelCapacity": entry.get("FuelCapacity"),
-                            "Credits": entry.get("Credits"),
+                            "Balance": entry.get("Credits"),
                         }
-                        set_states(init_info)
+                        update_state(init_info)
+                    if entry.get("event") == "Loadout":
+                        init_info = {
+                            "HullHealth": entry.get("HullHealth"),
+                        }
+                        update_state(init_info)
                 except json.JSONDecodeError:
                     continue
 
@@ -396,27 +454,53 @@ def init_state():
 
 
 # Gather information from the ingame status and save it to the ship-state.json file
-def save_status():
-    status = os.path.join(JOURNAL_DIRECTORY, "Status.json")
+def update_state(event):
 
+
+    status_path = os.path.join(JOURNAL_DIRECTORY, "Status.json")
     try:
-        with open(status, "r") as file:
-            status_content = json.load(file)
+        with open(status_path, "r") as file:
+            status = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        status = {}
 
-    except FileNotFoundError:
-        output("Status file not found.", COLOR.RED)
-        return []
-    except json.JSONDecodeError:
-        output("Error decoding JSON.", COLOR.RED)
-        return []
+    # Create a new dictionary with only the desired keys
+    filtered_data = {
+        "LegalState": status.get("LegalState"),
+        "Balance": status.get("Balance"),
+    }
 
-    current_status = {}
-    if "LegalState" in status_content:
-        current_status["LegalState"] = status_content["LegalState"]
-    if "Balance" in status_content:
-        current_status["Credits"] = status_content["Balance"]
+    # Handle nested Fuel data
+    if "Fuel" in event:
+        filtered_data["FuelMain"] = event["Fuel"].get("FuelMain")
+        filtered_data["FuelReservoir"] = event["Fuel"].get("FuelReservoir")
 
-    set_states(current_status)
+    # Merge filtered status with filtered event
+    if event:
+        filtered_data.update(event)
+
+    add_states(filtered_data)
+
+
+# Get any information and save only information related to the ship-state.json file
+def add_states(status):
+    state_file_path = "ship-state.json"
+
+    # Load existing data or create empty dict
+    try:
+        with open(state_file_path, "r") as file:
+            data = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = {}
+
+    # Update status while preserving other data
+    data.update(status)
+
+    # Write back to file
+    with open(state_file_path, "w") as file:
+        json.dump(data, file)
+
+    return True
 
     # HELPERS
 
@@ -429,8 +513,6 @@ def output(string, color=None):
 
 
 def cleanup_event(entry, keys_to_remove):
-    # List of keys to remove
-
     # Remove the specified keys
     for key in keys_to_remove:
         if key in entry:
