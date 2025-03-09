@@ -1,4 +1,4 @@
-from start.py import cleanup_event
+from start import cleanup_event
 
 
 def parse(entry):

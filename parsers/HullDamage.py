@@ -1,4 +1,4 @@
-from start import cleanup_event, add_states
+from start import cleanup_event
 
 
 def parse(entry):
@@ -6,9 +6,6 @@ def parse(entry):
         return False
 
     clean_event = cleanup_event(entry, ["Fighter", "PlayerPilot"])
-
-    add_states({"hullHealth": clean_event["Health"]})
-
     return clean_event
 
 

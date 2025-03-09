@@ -1,4 +1,6 @@
 __pycache__
 config.py
 ship-state.json
+last_prompt.json
+event_memory.json
 tts-temp.*

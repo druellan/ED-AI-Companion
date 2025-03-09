@@ -8,12 +8,12 @@ JOURNAL_DIRECTORY = os.path.join(
 # Enter the API endpoint of the LLM service you want to use, the API Key and the model
 LLM_ENDPOINT = "https://openrouter.ai/api/v1/"
 LLM_API_KEY = (
-    ""
+    "[API_KEY]"
 )
 # The primary model to use, and a list of models to use if the primary model fails
-LLM_MODEL_NAME = "google/gemini-2.0-pro-exp-02-05:free"
+LLM_MODEL_NAME = "google/gemini-2.0-flash-exp:free"
 LLM_MODEL_NAMES = [
-    "google/gemini-2.0-flash-exp:free",
+    "google/gemini-2.0-pro-exp-02-05:free",
 ]
 
 # Use WINDOWS for the built in TTS Windows feature
@@ -53,6 +53,7 @@ I wanto you to always:
 Use natural language. Don't build lists. Don't format the responses.
 Be as brief as possible, accurate as possible and factual as possible, triaging the information.
 Warn me about dangers.
+Ignore events that are duplicated or irrelevant (check the previous events).
 Round numbers.
 You can reply "NULL" if there is nothing to report.
 
@@ -78,15 +79,18 @@ Type L (Brown dwarf): not scoopable for fuel.
 Type T (Brown dwarf): not scoopable for fuel.
 Type Y (Brown dwarf): not scoopable for fuel.
 
-Current ship status, for use as reference:
+# Current ship status, to use as reference:
 {current_status}
 
-This is the previous event, just for context:
-{event_previous}
+# Ship cargo, to use as reference:
+{current_cargo}
+
+# This is a list of previous events, to use as reference:
+{recent_events}
 """
 
 USER_PROMPT = """"
-This is the context and the event to process, remember you can ignore information if instructed or the information is irrelevant:
+# This is the context and the event to process, remember you can ignore information if instructed or the information is irrelevant:
 {event_new}
 """
 
@@ -168,7 +172,7 @@ EXPLORATION_EVENTS = {
 # Trade Events
 TRADE_EVENTS = {
     "Trade": False,
-    "AsteroidCracked": True,
+    "AsteroidCracked": False,
     "BuyTradeData": False,
     "CollectCargo": True,
     "EjectCargo": True,
@@ -219,6 +223,7 @@ STATION_SERVICES_EVENTS = {
     "RepairAll": False,
     "RestockVehicle": False,
     "ScientificResearch": True,
+    "ShipyardTransfer": True,
 }
 
 # Powerplay Events
@@ -335,7 +340,7 @@ OTHER_EVENTS = {
     "ModuleInfo": False,
     "NpcCrewRank": False,
     "Promotion": True,
-    "ProspectedAsteroid": False,
+    "ProspectedAsteroid": True,
     "QuitACrew": False,
     "RebootRepair": True,
     "ReceiveText": True,
@@ -398,3 +403,273 @@ STATUS_EVENTS = {
     "LegalStateChanged": True,
     "WeaponSelected": False,
 }
+
+MEMORY_EVENTS = [
+    # Startup Events
+    "NewCommander",
+    "Missions",
+    "Statistics",
+    # Combat Events
+    "Bounty",
+    "CapShipBond",
+    "Interdiction",
+    "Interdicted",
+    "EscapeInterdiction",
+    "FactionKillBond",
+    "FighterDestroyed",
+    "HeatDamage",
+    "HeatWarning",
+    "HullDamage",
+    "PVPKill",
+    "ShieldState",
+    "ShipTargeted",
+    "SRVDestroyed",
+    "UnderAttack",
+    # Travel Events
+    "ApproachBody",
+    "Docked",
+    "DockingCanceled",
+    "DockingDenied",
+    "DockingGranted",
+    "DockingRequested",
+    "DockingTimeout",
+    "FSDJump",
+    "FSDTarget",
+    "LeaveBody",
+    "Liftoff",
+    "StartJump",
+    "SupercruiseEntry",
+    "SupercruiseExit",
+    "Touchdown",
+    "Undocked",
+    "NavRoute",
+    "NavRouteClear",
+    # Exploration Events
+    "DiscoveryScan",
+    "Scan",
+    "FSSAllBodiesFound",
+    "FSSBodySignals",
+    "FSSDiscoveryScan",
+    "FSSSignalDiscovered",
+    "MaterialCollected",
+    "MaterialDiscarded",
+    "MaterialDiscovered",
+    "MultiSellExplorationData",
+    "NavBeaconScan",
+    "BuyExplorationData",
+    "SAAScanComplete",
+    "SAASignalsFound",
+    "ScanBaryCentre",
+    "SellExplorationData",
+    # Trade Events
+    "Trade",
+    "AsteroidCracked",
+    "BuyTradeData",
+    "CollectCargo",
+    "EjectCargo",
+    "MarketBuy",
+    "MarketSell",
+    "MiningRefined",
+    # Station Services Events
+    "StationServices",
+    "BuyAmmo",
+    "BuyDrones",
+    "CargoDepot",
+    "CommunityGoal",
+    "CommunityGoalDiscard",
+    "CommunityGoalJoin",
+    "CommunityGoalReward",
+    "CrewAssign",
+    "CrewFire",
+    "CrewHire",
+    "EngineerContribution",
+    "EngineerCraft",
+    "EngineerLegacyConvert",
+    "FetchRemoteModule",
+    "Market",
+    "MassModuleStore",
+    "MaterialTrade",
+    "MissionAbandoned",
+    "MissionAccepted",
+    "MissionCompleted",
+    "MissionFailed",
+    "MissionRedirected",
+    "ModuleBuy",
+    "ModuleRetrieve",
+    "ModuleSell",
+    "ModuleSellRemote",
+    "ModuleStore",
+    "ModuleSwap",
+    "Outfitting",
+    "PayBounties",
+    "PayFines",
+    "PayLegacyFines",
+    "RedeemVoucher",
+    "RefuelAll",
+    "RefuelPartial",
+    "Repair",
+    "RepairAll",
+    "RestockVehicle",
+    "ScientificResearch",
+    "ShipyardTransfer",
+    # Powerplay Events
+    "PowerplayCollect",
+    "PowerplayDefect",
+    "PowerplayDeliver",
+    "PowerplayFastTrack",
+    "PowerplayJoin",
+    "PowerplayLeave",
+    "PowerplaySalary",
+    "PowerplayVote",
+    "PowerplayVoucher",
+    # Squadron Events
+    "AppliedToSquadron",
+    "DisbandedSquadron",
+    "InvitedToSquadron",
+    "JoinedSquadron",
+    "KickedFromSquadron",
+    "LeftSquadron",
+    "SharedBookmarkToSquadron",
+    "SquadronCreated",
+    "SquadronDemotion",
+    "SquadronPromotion",
+    "WonATrophyForSquadron",
+    # Fleet Carrier Events
+    "CarrierJump",
+    "CarrierBuy",
+    "CarrierStats",
+    "CarrierJumpRequest",
+    "CarrierDecommission",
+    "CarrierCancelDecommission",
+    "CarrierBankTransfer",
+    "CarrierDepositFuel",
+    "CarrierCrewServices",
+    "CarrierFinance",
+    "CarrierShipPack",
+    "CarrierModulePack",
+    "CarrierTradeOrder",
+    "CarrierDockingPermission",
+    "CarrierNameChanged",
+    "CarrierJumpCancelled",
+    # Odyssey Events
+    "Backpack",
+    "BackpackChange",
+    "BookDropship",
+    "BookTaxi",
+    "BuyMicroResources",
+    "BuySuit",
+    "BuyWeapon",
+    "CancelDropship",
+    "CancelTaxi",
+    "CollectItems",
+    "CreateSuitLoadout",
+    "DeleteSuitLoadout",
+    "Disembark",
+    "DropItems",
+    "DropShipDeploy",
+    "Embark",
+    "FCMaterials",
+    "LoadoutEquipModule",
+    "LoadoutRemoveModule",
+    "RenameSuitLoadout",
+    "ScanOrganic",
+    "SellMicroResources",
+    "SellOrganicData",
+    "SellWeapon",
+    "SwitchSuitLoadout",
+    "TransferMicroResources",
+    "TradeMicroResources",
+    "UpgradeSuit",
+    "UpgradeWeapon",
+    "UseConsumable",
+    # Other Events
+    "AfmuRepairs",
+    "ApproachSettlement",
+    "ChangeCrewRole",
+    "CockpitBreached",
+    "CommitCrime",
+    "Continued",
+    "CrewLaunchFighter",
+    "CrewMemberJoins",
+    "CrewMemberQuits",
+    "CrewMemberRoleChange",
+    "CrimeVictim",
+    "DatalinkScan",
+    "DatalinkVoucher",
+    "DataScanned",
+    "DockFighter",
+    "DockSRV",
+    "EndCrewSession",
+    "FighterRebuilt",
+    "FuelScoop",
+    "Friends",
+    "JetConeBoost",
+    "JetConeDamage",
+    "JoinACrew",
+    "KickCrewMember",
+    "LaunchDrone",
+    "LaunchFighter",
+    "LaunchSRV",
+    "ModuleInfo",
+    "NpcCrewRank",
+    "Promotion",
+    "ProspectedAsteroid",
+    "QuitACrew",
+    "RebootRepair",
+    "ReceiveText",
+    "RepairDrone",
+    "Resurrect",
+    "Scanned",
+    "SelfDestruct",
+    "SendText",
+    "Shutdown",
+    "Synthesis",
+    "SystemsShutdown",
+    "USSDrop",
+    "VehicleSwitch",
+    "WingAdd",
+    "WingInvite",
+    "WingJoin",
+    "WingLeave",
+    "CargoTransfer",
+    "SupercruiseDestinationDrop",
+    # Status Events
+    "LandingGearUp",
+    "LandingGearDown",
+    "FlightAssistOn",
+    "FlightAssistOff",
+    "HardpointsRetracted",
+    "HardpointsDeployed",
+    "LightsOff",
+    "LightsOn",
+    "CargoScoopRetracted",
+    "CargoScoopDeployed",
+    "SilentRunningOff",
+    "SilentRunningOn",
+    "FuelScoopStarted",
+    "FuelScoopEnded",
+    "SrvHandbrakeOff",
+    "SrvHandbrakeOn",
+    "SrvTurretViewConnected",
+    "SrvTurretViewDisconnected",
+    "SrvDriveAssistOff",
+    "SrvDriveAssistOn",
+    "FsdMassLockEscaped",
+    "FsdMassLocked",
+    "LowFuelWarningCleared",
+    "LowFuelWarning",
+    "OutofDanger",
+    "InDanger",
+    "NightVisionOff",
+    "NightVisionOn",
+    "LowOxygenWarningCleared",
+    "LowOxygenWarning",
+    "LowHealthWarningCleared",
+    "LowHealthWarning",
+    "GlideModeExited",
+    "GlideModeEntered",
+    "BreathableAtmosphereExited",
+    "BreathableAtmosphereEntered",
+    "LegalStateChanged",
+    "WeaponSelected",
+]

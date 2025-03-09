@@ -9,6 +9,7 @@ from pprint import pprint
 
 # import requests
 import asyncio
+from collections import deque
 # import io
 
 import pyttsx3
@@ -50,6 +51,7 @@ from config import (
     ODYSSEY_EVENTS,
     OTHER_EVENTS,
     STATUS_EVENTS,
+    MEMORY_EVENTS,
 )
 from parsers import EVENT_PARSERS
 
@@ -92,6 +94,9 @@ class COLOR:
     RESET = "\033[0m"  # Alternative name for END
 
 
+# Memory
+event_memory = deque(maxlen=30)
+
 # from tempfile import NamedTemporaryFile
 
 
@@ -110,11 +115,14 @@ def get_latest_journal_file(directory):
 
 
 # Send event data to the AI API
-def send_event_to_api(event_data, previous_event):
+def send_event_to_api(event_data):
     client = OpenAI(
         base_url=LLM_ENDPOINT,
         api_key=LLM_API_KEY,
-        default_headers={"X-Title": "ED:AI Companion"},
+        default_headers={
+            "X-Title": "ED:AI Companion",
+            "HTTP-Referer": "ED:AI Companion",
+        },
         timeout=20.0,
     )
 
@@ -125,11 +133,16 @@ def send_event_to_api(event_data, previous_event):
             "models": LLM_MODEL_NAMES,
         },
         messages=[
-            {"role": "system", "content": get_system_prompt(previous_event)},
+            {"role": "system", "content": get_system_prompt()},
             {"role": "user", "content": get_user_prompt(event_data)},
         ],
         temperature=0.2,
     )
+
+    # debug: send the messages variable to a file
+    with open("last_prompt.json", "w") as file:
+        last_prompt = get_system_prompt() + "\n\n" + get_user_prompt(event_data)
+        file.write(last_prompt)
 
     # Check if completion has an error
     if hasattr(completion, "error") and completion.error:
@@ -272,8 +285,6 @@ def monitor_journal():
 
     output(f"Monitoring journal file: {current_journal}")
 
-    last_event = None
-
     with open(current_journal, "r") as file:
         file.seek(0, os.SEEK_END)
         while True:
@@ -302,23 +313,17 @@ def monitor_journal():
                     current_event = entry.copy()
                     current_event.pop("timestamp", None)
 
-                    # Check if this is a duplicate event
-                    if current_event != last_event:
-                        # Process the event normally
-                        clean_entry = cleanup_event(
-                            entry, ["timestamp", "build", "SystemAddress"]
-                        )
+                    # Process the event normally
+                    clean_entry = cleanup_event(
+                        entry, ["timestamp", "build", "SystemAddress"]
+                    )
 
-                        update_state(clean_entry)
-                        response = generate_response(clean_entry, last_event)
+                    update_state(clean_entry)
+                    add_memory(clean_entry)
+                    response = generate_response(clean_entry)
 
-                        if response:
-                            speak_response(response)
-
-                        # Update last event tracking
-                        last_event = current_event
-                    else:
-                        output("Skipping duplicate event", COLOR.YELLOW)
+                    if response:
+                        speak_response(response)
 
                 except json.JSONDecodeError:
                     pass
@@ -327,11 +332,16 @@ def monitor_journal():
 
 
 # Operate on the received event, check if we have specific parsers for it
-def generate_response(entry, previous_entry):
+def generate_response(entry):
     event = entry.get("event", False)
+    # Hard filter events
+    hardFilered = ["Fileheader", "Shutdown", "Music"]
     output(f"Received event: {event}", COLOR.BRIGHT_CYAN)
 
     if not event:
+        return
+
+    if event in hardFilered:
         return
 
     # Check if the event has a parser
@@ -359,8 +369,7 @@ def generate_response(entry, previous_entry):
     # If the event is in the list, send it to the AI
     if event in EVENT_LIST:
         output(f"Reacting to event: {event}", COLOR.BRIGHT_CYAN)
-        previous_entry = json_to_compact_text(previous_entry)
-        response_text = send_event_to_api(entry_string, previous_entry)
+        response_text = send_event_to_api(entry_string)
 
     else:
         output(f"AI ignoring event: {event}", COLOR.BRIGHT_CYAN)
@@ -387,12 +396,24 @@ def speak_response(response):
 
 
 # Get the main prompt and enrich it with the current status
-def get_system_prompt(previous_event=""):
+def get_system_prompt():
     # Replace status placeholder in system prompt
     global_status = get_state_all()
-    system_prompt = SYSTEM_PROMPT.replace(
-        "{current_status}", str(global_status)
-    ).replace("{event_previous}", str(previous_event))
+    recent_events = get_recent_memory(10)
+
+    try:
+        cargo_path = os.path.join(JOURNAL_DIRECTORY, "Cargo.json")
+        with open(cargo_path, "r") as file:
+            cargo = json.load(file)
+            cargo_inventory = json_to_compact_text(cargo.get("Inventory"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        cargo_inventory = "[]"
+
+    system_prompt = (
+        SYSTEM_PROMPT.replace("{current_status}", json_to_compact_text(global_status))
+        .replace("{recent_events}", json_to_compact_text(recent_events))
+        .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
+    )
 
     return system_prompt
 
@@ -426,37 +447,16 @@ def init_state():
         output("No journal files found.", COLOR.RED)
         return
 
-    try:
-        with open(journal_file_path, "r") as file:
-            for line in file:
-                try:
-                    entry = json.loads(line)
-                    if entry.get("event") == "LoadGame":
-                        init_info = {
-                            "Ship": entry.get("Ship"),
-                            "ShipName": entry.get("ShipName"),
-                            "FuelLevel": entry.get("FuelLevel"),
-                            "FuelCapacity": entry.get("FuelCapacity"),
-                            "Balance": entry.get("Credits"),
-                        }
-                        update_state(init_info)
-                    if entry.get("event") == "Loadout":
-                        init_info = {
-                            "HullHealth": entry.get("HullHealth"),
-                        }
-                        update_state(init_info)
-                except json.JSONDecodeError:
-                    continue
-
-    except FileNotFoundError:
-        output("Journal file not found", COLOR.RED)
-        return None
+    with open(journal_file_path, "r") as file:
+        for line in file:
+            entry = json.loads(line)
+            filtered_entry = filter_state_events(entry)
+            if filtered_entry:
+                add_states(filtered_entry)
 
 
 # Gather information from the ingame status and save it to the ship-state.json file
 def update_state(event):
-
-
     status_path = os.path.join(JOURNAL_DIRECTORY, "Status.json")
     try:
         with open(status_path, "r") as file:
@@ -465,21 +465,18 @@ def update_state(event):
         status = {}
 
     # Create a new dictionary with only the desired keys
-    filtered_data = {
+    filtered_status = {
         "LegalState": status.get("LegalState"),
         "Balance": status.get("Balance"),
     }
 
-    # Handle nested Fuel data
-    if "Fuel" in event:
-        filtered_data["FuelMain"] = event["Fuel"].get("FuelMain")
-        filtered_data["FuelReservoir"] = event["Fuel"].get("FuelReservoir")
+    filtered_event = filter_state_events(event)
 
     # Merge filtered status with filtered event
     if event:
-        filtered_data.update(event)
+        filtered_status.update(filtered_event)
 
-    add_states(filtered_data)
+    add_states(filtered_status)
 
 
 # Get any information and save only information related to the ship-state.json file
@@ -502,7 +499,41 @@ def add_states(status):
 
     return True
 
-    # HELPERS
+
+# HELPERS
+
+
+def filter_state_events(entry):
+    filtered = {}
+
+    if entry.get("event") == "LoadGame":
+        filtered = {
+            "Ship": entry.get("Ship"),
+            "ShipName": entry.get("ShipName"),
+            "FuelLevel": entry.get("FuelLevel"),
+            "FuelCapacity": entry.get("FuelCapacity"),
+            "Balance": entry.get("Credits"),
+        }
+    if entry.get("event") == "Loadout":
+        filtered = {
+            "HullHealth": entry.get("HullHealth"),
+        }
+
+    if entry.get("event") == "Fuel":
+        filtered["FuelLevel"] = entry["Fuel"].get("FuelMain")
+        filtered["FuelReservoir"] = entry["Fuel"].get("FuelReservoir")
+
+    if entry.get("event") == "ReservoirReplenished":
+        filtered["FuelLevel"] = entry.get("FuelMain")
+        filtered["FuelReservoir"] = entry.get("FuelReservoir")
+
+    if entry.get("event") == "RepairAll":
+        filtered["HullHealth"] = 1
+
+    # if entry.get("event") == "RefuelAll":
+    #     filtered["FuelMain"] = event.get("Amount")
+
+    return filtered
 
 
 def output(string, color=None):
@@ -547,6 +578,30 @@ def json_to_compact_text(data):
         return ""
     else:
         return str(data).replace(" ", "_")
+
+
+def init_menory():
+    try:
+        with open("event_memory.json", "r") as file:
+            event_memory.extend(json.load(file))
+    except FileNotFoundError:
+        pass
+
+
+def add_memory(event_data):
+    # list of event allowed to be memorized
+
+    if event_data["event"] in MEMORY_EVENTS:
+        event_memory.append(event_data)
+        with open("event_memory.json", "w") as file:
+            json.dump(list(event_memory), file)
+
+
+def get_recent_memory(count=None):
+    if count is None:
+        return list(event_memory)
+
+    return list(event_memory)[-count:]
 
 
 if __name__ == "__main__":
