@@ -17,6 +17,7 @@ def parse(entry):
         # Combat
         "$Police_ArriveInvestigate",
         "$Pirate_HunterHostileSC",
+        # "$Pirate_OnStartScanCargo",
         # "$Military_Passthrough",
         "$Pirate_OnDeclarePiracyAttack",
         "$BadKarmaCriticalDamage",

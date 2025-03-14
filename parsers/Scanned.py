@@ -4,5 +4,5 @@ def parse(entry):
 
 CONTEXT = """
 A ship scanned us.
-Inform what type of scan was done.
+Inform the ship what type of scan was done.
 """

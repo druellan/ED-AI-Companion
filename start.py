@@ -352,7 +352,7 @@ def generate_response(entry):
         parsed_entry = entry
 
     if parsed_entry is False:
-        output("Parser decided to ignore the event", COLOR.BRIGHT_CYAN)
+        output("Parser ignored the event", COLOR.BRIGHT_CYAN)
         return False
 
     if event in EVENT_PARSERS and "context" in EVENT_PARSERS[event]:

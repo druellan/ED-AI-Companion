@@ -4,11 +4,12 @@ from start import cleanup_event
 def parse(entry):
     entry = cleanup_event(entry, ["SystemAddress"])
 
-    signal_list = {}
-    for signal in entry["Signals"]:
-        signal_list.append({"Type_Localised": signal["Type_Localised"]})
+    # signal_list = []
+    # for signal in entry["Signals"]:
+    # signal_list.append({"Type_Localised": signal["Type_Localised"]})
 
-    entry["Signals"] = signal_list
+    # entry["Signals"] = signal_list
+
     return entry
 
 

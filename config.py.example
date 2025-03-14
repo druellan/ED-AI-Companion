@@ -8,12 +8,12 @@ JOURNAL_DIRECTORY = os.path.join(
 # Enter the API endpoint of the LLM service you want to use, the API Key and the model
 LLM_ENDPOINT = "https://openrouter.ai/api/v1/"
 LLM_API_KEY = (
-    "[API_KEY]"
+    ""
 )
 # The primary model to use, and a list of models to use if the primary model fails
-LLM_MODEL_NAME = "google/gemini-2.0-flash-exp:free"
+LLM_MODEL_NAME = "mistralai/mistral-small-24b-instruct-2501:free"
 LLM_MODEL_NAMES = [
-    "google/gemini-2.0-pro-exp-02-05:free",
+    "google/gemini-2.0-flash-exp:free",
 ]
 
 # Use WINDOWS for the built in TTS Windows feature
@@ -44,12 +44,12 @@ EDSM_API = "https://www.edsm.net"
 
 # The initial prompt sent to the asistant. Can be anything you want to remark globally. Parsers have their own prompts.
 SYSTEM_PROMPT = """
+# Context
 You are a computer AI inside my starship in the game Elite Dangerous.
 I'm going to provide you events from the ship journal and other relevant data, in compact text format.
-Use facts that are related to the game Elite Dangerous and the in-game universe.
 Always talk to me directly as Commander.
 
-I wanto you to always:
+# I want you to always:
 Use natural language. Don't build lists. Don't format the responses.
 Be as brief as possible, accurate as possible and factual as possible, triaging the information.
 Warn me about dangers.
@@ -57,7 +57,11 @@ Ignore events that are duplicated or irrelevant (check the previous events).
 Round numbers.
 You can reply "NULL" if there is nothing to report.
 
-Common dangers:
+# Remeber:
+Use facts that are related to the game Elite Dangerous and the in-game universe.
+Remeber the different types of stars and their scoopability. If you don't remember, tell me you don't have that information.
+
+# Common dangers:
 FuelLevel is low.
 HullHealth is low.
 Shields are offline.
@@ -65,19 +69,6 @@ Threat level is high.
 System security is low.
 A star type is not scoopable
 A star type is of a dangerous type.
-
-Remember this about stars:
-Type K (Orange star): scoopable for fuel.
-Type G (Yellow star): scoopabl for fuele.
-Type B (Blue-White start): scoopable for fuel.
-Type F (White star): scoopable for fuel.
-Type O (Blue star): scoopable for fuel.
-Type A (Blue-White star): scoopable for fuel.
-Type M (Red Dwarf): scoopable for fuel.
-
-Type L (Brown dwarf): not scoopable for fuel.
-Type T (Brown dwarf): not scoopable for fuel.
-Type Y (Brown dwarf): not scoopable for fuel.
 
 # Current ship status, to use as reference:
 {current_status}
@@ -90,9 +81,22 @@ Type Y (Brown dwarf): not scoopable for fuel.
 """
 
 USER_PROMPT = """"
-# This is the context and the event to process, remember you can ignore information if instructed or the information is irrelevant:
+# This is the context and the event to process:
 {event_new}
 """
+
+# Remember this about stars:
+# Type K (Orange star): scoopable for fuel.
+# Type G (Yellow star): scoopabl for fuele.
+# Type B (Blue-White start): scoopable for fuel.
+# Type F (White star): scoopable for fuel.
+# Type O (Blue star): scoopable for fuel.
+# Type A (Blue-White star): scoopable for fuel.
+# Type M (Red Dwarf): scoopable for fuel.
+
+# Type L (Brown dwarf): not scoopable for fuel.
+# Type T (Brown dwarf): not scoopable for fuel.
+# Type Y (Brown dwarf): not scoopable for fuel.
 
 # Change to True or False, depending if you want the asistant to react or ignore each event
 
