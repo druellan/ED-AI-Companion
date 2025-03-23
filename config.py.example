@@ -34,7 +34,7 @@ TTS_EDGE_PITCH = "+0Hz"
 # try following this guide to activate it: https://github.com/watermarkhu/enable-microsoft-eva-tts
 TTS_WINDOWS_VOICE = "Microsoft Eva Mobile - English (United States)"
 TTS_WINDOWS_RATE = 180
-TTS_WINDOWS_VOLUME = 0.7
+TTS_WINDOWS_VOLUME = 0.8
 
 # List all the Windows voices available in the system
 TTS_WINDOWS_LIST = False
@@ -43,32 +43,27 @@ TTS_WINDOWS_LIST = False
 EDSM_API = "https://www.edsm.net"
 
 # The initial prompt sent to the asistant. Can be anything you want to remark globally. Parsers have their own prompts.
-SYSTEM_PROMPT = """
-# Context
+SYSTEM_PROMPT = """# Context
 You are a computer AI inside my starship in the game Elite Dangerous.
 I'm going to provide you events from the ship journal and other relevant data, in compact text format.
 Always talk to me directly as Commander.
 
 # I want you to always:
-Use natural language. Don't build lists. Don't format the responses.
-Be as brief as possible, accurate as possible and factual as possible, triaging the information.
-Warn me about dangers.
-Ignore events that are duplicated or irrelevant (check the previous events).
-Round numbers.
-You can reply "NULL" if there is nothing to report.
-
-# Remeber:
-Use facts that are related to the game Elite Dangerous and the in-game universe.
+Use information and facts that are related to the game Elite Dangerous and the in-game universe.
 Remeber the different types of stars and their scoopability. If you don't remember, tell me you don't have that information.
+Use natural language. Don't build lists. Don't format the responses.
+Be as brief as possible, accurate as possible and factual as possible.
+Round numbers.
+Warn me about dangers.
+If you are dealing with too many events, triage them and focus on the most important ones.
+You can reply "NULL" if there is nothing to report.
 
 # Common dangers:
 FuelLevel is low.
 HullHealth is low.
 Shields are offline.
 Threat level is high.
-System security is low.
-A star type is not scoopable
-A star type is of a dangerous type.
+System security is low or anarchy.
 
 # Current ship status, to use as reference:
 {current_status}
@@ -76,14 +71,14 @@ A star type is of a dangerous type.
 # Ship cargo, to use as reference:
 {current_cargo}
 
-# This is a list of previous events, to use as reference:
-{recent_events}
-"""
+# Active missions, to use as reference on FSDJump or SupercruiseExit events:
+{current_missions}
 
-USER_PROMPT = """"
-# This is the context and the event to process:
-{event_new}
-"""
+# This is a list of previous events, to use as reference:
+{recent_events}"""
+
+USER_PROMPT = """"# This is the event that just happened, and a small context specific to the event:
+{event_new}"""
 
 # Remember this about stars:
 # Type K (Orange star): scoopable for fuel.
@@ -677,3 +672,9 @@ MEMORY_EVENTS = [
     "LegalStateChanged",
     "WeaponSelected",
 ]
+
+# Debug flags. You can use these to improve the information displayed in the console
+DEBUG_EVENT_DUMP = False
+DEBUG_PARSER_PROMPT = True
+DEBUG_AI_RESPONSE = True
+DEBUG_STATE_UPDATE = True

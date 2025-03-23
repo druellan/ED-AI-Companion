@@ -14,17 +14,23 @@ def parse(entry):
         "$Miner_OnJumpNoAsteroids",
         "$STATION_docking_denied",
         "$DockingChatter",
-        # Combat
+        # Police
         "$Police_ArriveInvestigate",
-        "$Pirate_HunterHostileSC",
-        # "$Pirate_OnStartScanCargo",
-        # "$Military_Passthrough",
-        "$Pirate_OnDeclarePiracyAttack",
-        "$BadKarmaCriticalDamage",
         "$OverwatchCriticalDamage",
+        # "$Military_Passthrough",
+        # Pirate
+        "$Pirate_Arrival",
+        "$Pirate_HunterHostileSC",
+        "$Pirate_LargeCargoIgnoreThreat",
+        "$Pirate_ThreatenTimer",
+        "$Pirate_ThreatenSpecific",
+        # "$Pirate_OnStartScanCargo",
+        "$Pirate_OnDeclarePiracyAttack",
+        # "$Pirate_ReminderValue",
+        # "$Pirate_ReminderSpecific",
+        "$BadKarmaCriticalDamage",
         "$Indirect_EnemyReinforcements",
         "$Combat_OnKillReward",
-        "$Pirate_Arrival",
     ]
 
     if not any(j_message.startswith(msg) for msg in interpret_messages):
@@ -39,6 +45,7 @@ This meesage has been broadcasted on local space.
 Interpret the message based on "Message" (intention) and "Message_Localised" (content).
 Consider the previous message as context and to avoid repetition.
 Don't read the message content, just interpret it.
+Pay special attention to "$Pirate_ThreatenSpecific" messages.
 If you think the message is trivial, ignore it.
 """
 

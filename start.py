@@ -1,5 +1,5 @@
 # ED:AI Companion by druellan
-# Version: 0.1.0
+# Version: 0.1.1
 
 import sys
 import os
@@ -52,10 +52,14 @@ from config import (
     OTHER_EVENTS,
     STATUS_EVENTS,
     MEMORY_EVENTS,
+    DEBUG_EVENT_DUMP,
+    DEBUG_PARSER_PROMPT,
+    DEBUG_AI_RESPONSE,
+    DEBUG_STATE_UPDATE,
 )
 from parsers import EVENT_PARSERS
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 
 class COLOR:
@@ -95,7 +99,8 @@ class COLOR:
 
 
 # Memory
-event_memory = deque(maxlen=30)
+event_memory = deque(maxlen=50)
+missions_memory = deque(maxlen=50)
 
 # from tempfile import NamedTemporaryFile
 
@@ -139,7 +144,7 @@ def send_event_to_api(event_data):
         temperature=0.2,
     )
 
-    # debug: send the messages variable to a file
+    # Send the messages variable to a file
     with open("last_prompt.json", "w") as file:
         last_prompt = get_system_prompt() + "\n\n" + get_user_prompt(event_data)
         file.write(last_prompt)
@@ -285,7 +290,7 @@ def monitor_journal():
 
     output(f"Monitoring journal file: {current_journal}")
 
-    with open(current_journal, "r") as file:
+    with open(current_journal, "r", encoding="utf-8") as file:
         file.seek(0, os.SEEK_END)
         while True:
             # Check for a new journal file
@@ -294,41 +299,110 @@ def monitor_journal():
                 output(f"Switching to new journal file: {new_journal}")
                 current_journal = new_journal
                 file.close()
+                file = open(current_journal, "r", encoding="utf-8")
 
-                if new_journal:
-                    file = open(new_journal, "r")
-                    current_journal = new_journal
-                else:
-                    output("No new journal file found.", COLOR.RED)
-                    continue
-                file.seek(0, os.SEEK_END)
+            new_lines = file.readlines()
+            file.seek(0, os.SEEK_END)
 
-            line = file.readline()
-
-            if line:
-                try:
-                    entry = json.loads(line)
-
-                    # Create a deduplication key by removing timestamp
-                    current_event = entry.copy()
-                    current_event.pop("timestamp", None)
-
-                    # Process the event normally
-                    clean_entry = cleanup_event(
-                        entry, ["timestamp", "build", "SystemAddress"]
-                    )
-
-                    update_state(clean_entry)
-                    add_memory(clean_entry)
-                    response = generate_response(clean_entry)
-
-                    if response:
-                        speak_response(response)
-
-                except json.JSONDecodeError:
-                    pass
+            if new_lines:
+                process_journal_entries(new_lines)
             else:
                 time.sleep(1)
+
+
+def process_journal_entries(lines):
+    entries = []
+    for line in lines:
+        try:
+            entry = json.loads(line)
+            entries.append(entry)
+        except json.JSONDecodeError:
+            continue
+
+    # Group consecutive entries by event type
+    current_event_type = None
+    current_batch = []
+
+    for entry in entries:
+        event_type = entry.get("event")
+
+        # Skip filtered events
+        if event_type in ["Fileheader", "Shutdown", "Music"]:
+            continue
+
+        if DEBUG_EVENT_DUMP:
+            output(entry)
+
+        update_state(entry)
+        add_memory(entry)
+        update_missions(entry)
+
+        # If this is a new event type, process the previous batch
+        if event_type != current_event_type:
+            if current_batch:
+                process_event_batch(current_batch)
+            current_batch = [entry]
+            current_event_type = event_type
+        else:
+            current_batch.append(entry)
+
+    # Process the final batch
+    if current_batch:
+        process_event_batch(current_batch)
+
+
+def process_event_batch(batch):
+    if not batch:
+        return
+
+    event_type = batch[0]["event"]
+    output(f"Processing {len(batch)} {event_type} events", COLOR.BRIGHT_CYAN)
+
+    # Clean up each entry in the batch
+    clean_batch = [
+        cleanup_event(entry, ["timestamp", "build", "SystemAddress"]) for entry in batch
+    ]
+
+    # Build concatenated string of events
+    entry_strings = []
+    for entry in clean_batch:
+        if event_type in EVENT_PARSERS:
+            parsed_entry = EVENT_PARSERS[event_type]["function"](entry)
+            if parsed_entry is not False:
+                entry_strings.append(json_to_compact_text(parsed_entry))
+        else:
+            entry_strings.append(json_to_compact_text(entry))
+
+    if not entry_strings:
+        output("Parser ignored all events", COLOR.BRIGHT_CYAN)
+        return False
+
+    # Add context if available
+    if event_type in EVENT_PARSERS and "context" in EVENT_PARSERS[event_type]:
+        final_string = (
+            EVENT_PARSERS[event_type]["context"]
+            + " Events: "
+            + "; ".join(entry_strings)
+        )
+    else:
+        final_string = "Events: " + "; ".join(entry_strings)
+
+    if DEBUG_PARSER_PROMPT:
+        output(final_string, COLOR.CYAN)
+
+    # If the event is in the list, send it to the AI
+    if event_type in EVENT_LIST:
+        output(f"Reacting {event_type} events", COLOR.BRIGHT_CYAN)
+        response_text = send_event_to_api(final_string)
+        if response_text:
+            if DEBUG_AI_RESPONSE:
+                if response_text.startswith("NULL"):
+                    output("AI dropped the response.", COLOR.CYAN)
+                    return False
+                output(f"AI response: {response_text}", COLOR.CYAN)
+            speak_response(response_text)
+    else:
+        output(f"Ignoring {event_type} events", COLOR.BRIGHT_CYAN)
 
 
 # Operate on the received event, check if we have specific parsers for it
@@ -364,7 +438,8 @@ def generate_response(entry):
     else:
         entry_string = json_to_compact_text(parsed_entry)
 
-    output(entry_string, COLOR.CYAN)
+    if DEBUG_PARSER_PROMPT:
+        output(entry_string, COLOR.CYAN)
 
     # If the event is in the list, send it to the AI
     if event in EVENT_LIST:
@@ -372,15 +447,16 @@ def generate_response(entry):
         response_text = send_event_to_api(entry_string)
 
     else:
-        output(f"AI ignoring event: {event}", COLOR.BRIGHT_CYAN)
+        output(f"Ignoring the event: {event}", COLOR.BRIGHT_CYAN)
         return False
 
     # Output the AI response
     if response_text:
-        if response_text.startswith("NULL"):
-            output("AI ignored the info.", COLOR.CYAN)
-            return False
-        output(f"AI response: {response_text}", COLOR.CYAN)
+        if DEBUG_AI_RESPONSE:
+            if response_text.startswith("NULL"):
+                output("AI dropped the response.", COLOR.CYAN)
+                return False
+            output(f"AI response: {response_text}", COLOR.CYAN)
         return response_text
 
 
@@ -399,7 +475,8 @@ def speak_response(response):
 def get_system_prompt():
     # Replace status placeholder in system prompt
     global_status = get_state_all()
-    recent_events = get_recent_memory(10)
+    recent_events = get_recent_memory(20)
+    missions = get_missions()
 
     try:
         cargo_path = os.path.join(JOURNAL_DIRECTORY, "Cargo.json")
@@ -413,6 +490,7 @@ def get_system_prompt():
         SYSTEM_PROMPT.replace("{current_status}", json_to_compact_text(global_status))
         .replace("{recent_events}", json_to_compact_text(recent_events))
         .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
+        .replace("{current_missions}", json_to_compact_text(missions))
     )
 
     return system_prompt
@@ -423,6 +501,65 @@ def get_user_prompt(context):
     user_prompt = USER_PROMPT.replace("{event_new}", str(context))
 
     return user_prompt
+
+
+# Keep a list of current missions
+def update_missions(entry):
+    mission_file_path = "missions_memory.json"
+
+    # Load existing missions into deque if it's empty
+    if not missions_memory:
+        try:
+            with open(mission_file_path, "r") as file:
+                missions_data = json.load(file)
+                missions_memory.extend(missions_data)
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+
+    # If the event is MissionAccepted, add it to the deque
+    if entry.get("event") == "MissionAccepted":
+        missions_memory.append(entry)
+
+        # Save the updated deque to file
+        with open(mission_file_path, "w") as file:
+            json.dump(list(missions_memory), file)
+
+    # If the event is MissionCompleted, remove the corresponding mission
+    if entry.get("event") == "MissionCompleted":
+        # Find and remove the completed mission
+        mission_id = entry.get("MissionID")
+        for mission in list(missions_memory):
+            if mission.get("MissionID") == mission_id:
+                missions_memory.remove(mission)
+                break
+
+        # Save the updated deque to file
+        with open(mission_file_path, "w") as file:
+            json.dump(list(missions_memory), file)
+
+
+# Modify the get_missions function to use the deque
+def get_missions():
+    # If the deque is empty, try to load from file
+    if not missions_memory:
+        try:
+            with open("missions_memory.json", "r") as file:
+                missions_data = json.load(file)
+                missions_memory.extend(missions_data)
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+
+    return list(missions_memory)
+
+
+# Add an initialization function for missions
+def init_missions():
+    try:
+        with open("missions_memory.json", "r") as file:
+            missions_data = json.load(file)
+            missions_memory.extend(missions_data)
+    except FileNotFoundError:
+        pass
 
 
 # Get all the information from the ship-state.json file
@@ -464,10 +601,11 @@ def update_state(event):
     except (FileNotFoundError, json.JSONDecodeError):
         status = {}
 
-    # Create a new dictionary with only the desired keys
     filtered_status = {
         "LegalState": status.get("LegalState"),
         "Balance": status.get("Balance"),
+        "FuelLevel": status.get("Fuel", {}).get("FuelMain"),
+        "FuelReservoir": status.get("Fuel", {}).get("FuelReservoir"),
     }
 
     filtered_event = filter_state_events(event)
@@ -482,6 +620,9 @@ def update_state(event):
 # Get any information and save only information related to the ship-state.json file
 def add_states(status):
     state_file_path = "ship-state.json"
+
+    if DEBUG_STATE_UPDATE:
+        output(f"Updating status: {status}", COLOR.CYAN)
 
     # Load existing data or create empty dict
     try:
@@ -529,9 +670,13 @@ def filter_state_events(entry):
 
     if entry.get("event") == "RepairAll":
         filtered["HullHealth"] = 1
+    if entry.get("event") == "HullDamage":
+        filtered["HullHealth"] = entry.get("Health")
 
-    # if entry.get("event") == "RefuelAll":
-    #     filtered["FuelMain"] = event.get("Amount")
+    if entry.get("event") == "RefuelAll":
+        current_state = get_state_all()
+        if "FuelMain" in current_state:
+            filtered["FuelMain"] = current_state["FuelCapacity"]
 
     return filtered
 
@@ -580,7 +725,7 @@ def json_to_compact_text(data):
         return str(data).replace(" ", "_")
 
 
-def init_menory():
+def init_memory():
     try:
         with open("event_memory.json", "r") as file:
             event_memory.extend(json.load(file))
@@ -628,8 +773,11 @@ if __name__ == "__main__":
     else:
         output(f"Text-to-Speech: type {TTS_TYPE} voice {TTS_EDGE_VOICE}")
 
+    init_state()
+    init_memory()
+    init_missions()
+
     output("All systems ready!", COLOR.BRIGHT_GREEN)
     speak_response("All systems ready.")
 
-    init_state()
     monitor_journal()

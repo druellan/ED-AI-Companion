@@ -1,6 +1,7 @@
 # Very hand crafted parser for the Market event.
-# Most AIs are able to figure out the market prices and the cargo, but their accuracy decrease the longest the prompt is and the smaller the LLM is.
+# Most AIs are able to figure out the market prices and the cargo, but their accuracy decrease the longest the prompt is.
 # So, I'm doing most of the important logic by hand, leaving the AI with the tastk of figure out small details and comunicate the information.
+# By default we are only going to process the top 3 opportunities to buy and sell.
 
 import json
 import os
@@ -63,21 +64,21 @@ def parse(entry):
             "Name_Localised": entry.get("Name_Localised"),
             "Rare": entry.get("Rare"),
             "Stock": entry.get("Stock", 0),
-            "Galactic_Average": entry.get("MeanPrice", 0) - entry.get("BuyPrice", 0),
+            "Profit": entry.get("MeanPrice", 0) - entry.get("BuyPrice", 0),
         }
         for entry in items
         if entry.get("Producer") is True
     ]
 
-    # Sort the buy_goods based on GalacticAverage
-    buy_goods.sort(key=lambda x: x.get("Galactic_Average", 0), reverse=True)
+    # Sort the buy_goods based on Profit
+    buy_goods.sort(key=lambda x: x.get("Profit", 0), reverse=True)
     buy_goods = buy_goods[:products_to_report]
 
     rare_goods = [
         {
             "Name_Localised": entry.get("Name_Localised"),
             "Rare": entry.get("Rare"),
-            "Galactic_Average": entry.get("MeanPrice", 0) - entry.get("BuyPrice", 0),
+            "Profit": entry.get("MeanPrice", 0) - entry.get("BuyPrice", 0),
         }
         for entry in items
         if entry.get("Rare") is True and entry.get("Producer") is True
@@ -87,15 +88,15 @@ def parse(entry):
         {
             "Name_Localised": entry.get("Name_Localised"),
             "Demand": entry.get("Demand", 0),
-            "Galactic_Average": entry.get("SellPrice", 0) - entry.get("MeanPrice", 0),
+            "Profit": entry.get("SellPrice", 0) - entry.get("MeanPrice", 0),
         }
         for entry in items
         if entry.get("Consumer") is True and entry.get("Demand", 0) > 0
     ]
 
-    # Sort the sell_goods based on Galactic_Average, reverse order
+    # Sort the sell_goods based on Profit, reverse order
     sell_goods.sort(
-        key=lambda x: (x.get("Galactic_Average", 0), x.get("Demand", 0)), reverse=True
+        key=lambda x: (x.get("Profit", 0), x.get("Demand", 0)), reverse=True
     )
     sell_goods = sell_goods[:products_to_report]
 
@@ -112,7 +113,7 @@ def parse(entry):
                     {
                         "Name_Localised": market_item.get("Name_Localised"),
                         "Demand": market_item.get("Demand", 0),
-                        "Galactic_Average": market_item.get("SellPrice", 0)
+                        "Profit": market_item.get("SellPrice", 0)
                         - market_item.get("MeanPrice", 0),
                     }
                 )
@@ -128,10 +129,10 @@ def parse(entry):
 
 CONTEXT = """
 We are about to buy or sell something in the market.
-Tell me about opportunities to buy based on the galactic average.
-Tell me if I have cargo to sell, let me know if I can make a profit based on the galactic average, ignore if I have no cargo.
-Tell me if there are good oportunities to sell. Ignore if the galactic average is low.
-Note if there are rare goods, ignore if there are no rare goods.
+Tell me about opportunities to buy based on profit.
+Tell me if I have cargo to sell, let me know if I can make a profit.
+Tell me if there are good oportunities to sell.
+Tell me if there are rare goods.
 """
 
 ## Event Example ##

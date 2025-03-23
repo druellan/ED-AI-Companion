@@ -3,4 +3,5 @@ config.py
 ship-state.json
 last_prompt.json
 event_memory.json
+event_missions.json
 tts-temp.*

@@ -8,7 +8,6 @@ from config import (
 
 
 def parse(entry):
-    print("Reading the cargo file.")
     cargo_file = os.path.join(JOURNAL_DIRECTORY, "Cargo.json")
 
     try:

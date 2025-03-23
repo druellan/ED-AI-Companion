@@ -28,7 +28,7 @@ Provide a summary of the system.
 Note if the star type is dangerous or can't be scouped for fuel.
 If the system has no planets, no human presence, declare the system barren and ignore the rest.
 Describe the system allegiance.
-Describe the system faction and system faction state. Note if I have reputation with the faction.
+Describe the system faction and system faction state. Note if I have reputation with the faction (bad, average, good, excellent).
 Note if the happiness is low, otherwise, ignore this fact.
 Describe the system security level.
 Describe the system economy and population.
