@@ -14,7 +14,7 @@ def parse(entry):
     print("Reading the market file.")
     market_store = os.path.join(JOURNAL_DIRECTORY, "Market.json")
 
-    products_to_report = 3
+    products_to_report = 6
 
     try:
         with open(market_store, "r") as file:
@@ -128,11 +128,10 @@ def parse(entry):
 
 
 CONTEXT = """
-We are about to buy or sell something in the market.
-Tell me about opportunities to buy based on profit.
-Tell me if I have cargo to sell, let me know if I can make a profit.
-Tell me if there are good oportunities to sell.
-Tell me if there are rare goods.
+We are looking at the buy/sell market.
+Allways report the top opportunities to buy and sell, but only if the profit is high.
+Tell me if we have any cargo we can sell for a profit.
+Tell me if there are any rare goods available, don't mention it if there are none.
 """
 
 ## Event Example ##

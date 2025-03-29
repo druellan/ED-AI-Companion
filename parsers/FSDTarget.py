@@ -34,11 +34,10 @@ def parse(entry):
 
 
 CONTEXT = """
-    We are targetting our next destination.
-    Remind me how many jumps away the system is.
-    Mention the star only if there is something wrong with it.
-    Don't mention the population information if there is population.
-    Don't mention the permit-locked information if no permit is required.
+    We are targetting our next FSD destination.
+    If RemainingJumpsInRoute > 1 the target is a transition system to our destination, otherwise, it is the final destination.
+    Provide a brief summary of remarkable features of the system.
+    Remarkable features: ReserveLevel is pristine, WasDiscovered=0, WasMapped=0, Rings.
 """
 
 ## Example of the event ##

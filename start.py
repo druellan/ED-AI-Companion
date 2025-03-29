@@ -589,7 +589,7 @@ def init_state():
             entry = json.loads(line)
             filtered_entry = filter_state_events(entry)
             if filtered_entry:
-                add_states(filtered_entry)
+                update_state(filtered_entry)
 
 
 # Gather information from the ingame status and save it to the ship-state.json file

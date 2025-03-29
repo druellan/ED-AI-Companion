@@ -2,18 +2,13 @@ def parse(entry):
     # scan_stage = entry.get("ScanStage")
 
     if entry.get("TargetLocked") is False:
-        print("Target lost, ignoring.")
         return False
 
     if not entry.get("LegalStatus"):
-        print("Waiting for legal status.")
         return False
 
-    if entry.get("LegalStatus") == "Clean":
-        print("Target clean, ignoring.")
-        return False
-
-    print("Target is not clean, checking for damage.")
+    # if entry.get("LegalStatus") == "Clean":
+    # return False
 
     # Cleanup the entry
     entry.pop("Faction", None)

@@ -50,12 +50,14 @@ Always talk to me directly as Commander.
 
 # I want you to always:
 Use information and facts that are related to the game Elite Dangerous and the in-game universe.
-Remember the different types of stars and their scoopability. If you don't remember, tell me you don't have that information.
+Remember the different types of stars.
 Use natural language. Don't build lists. Don't format the responses.
 Be as brief as possible, accurate as possible and factual as possible.
 Round numbers.
 Warn me about dangers.
-If you are dealing with too many events, triage them and focus on the most important ones.
+Prioritize events that preserve the integrity of the ship and the safety of the crew.
+If you are dealing with too many events, triage or summarize them.
+Measure fuel in units of ton.
 You can reply "NULL" if there is nothing to report.
 
 # Common dangers:
@@ -64,6 +66,22 @@ HullHealth is low.
 Shields are offline.
 Threat level is high.
 System security is low or anarchy.
+We are jumping to a non scoopable star.
+
+# Interesting events and facts
+The star is from a rare type.
+A planet is earth-like or is capable of life.
+A planet has rings.
+A ship is from a player or a player faction.
+A system is permit locked.
+A system has a community goal.
+A system has a rare good.
+A system has a tech broker.
+A system has a guardian site.
+A system has a megaship.
+A system has a generation ship.
+A system has a crashed ship.
+A system has a compromised nav beacon.
 
 # Current ship status, to use as reference:
 {current_status}
@@ -74,7 +92,7 @@ System security is low or anarchy.
 # Active missions, to use as reference on FSDJump or SupercruiseExit events:
 {current_missions}
 
-# This is a list of previous events, to use as reference:
+# This is a list of previous events to use as reference:
 {recent_events}"""
 
 USER_PROMPT = """"# This is the event that just happened, and a small context specific to the event:
@@ -129,7 +147,7 @@ TRAVEL_EVENTS = {
     "ApproachBody": True,
     "Docked": False,
     "DockingCanceled": False,
-    "DockingDenied": False,
+    "DockingDenied": True,
     "DockingGranted": False,
     "DockingRequested": False,
     "DockingTimeout": False,
@@ -154,7 +172,7 @@ EXPLORATION_EVENTS = {
     "FSSAllBodiesFound": True,
     "FSSBodySignals": False,
     "FSSDiscoveryScan": True,
-    "FSSSignalDiscovered": False,
+    "FSSSignalDiscovered": True,
     "MaterialCollected": True,
     "MaterialDiscarded": False,
     "MaterialDiscovered": True,
