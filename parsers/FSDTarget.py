@@ -36,8 +36,8 @@ def parse(entry):
 CONTEXT = """
     We are targetting our next FSD destination.
     If RemainingJumpsInRoute > 1 the target is a transition system to our destination, otherwise, it is the final destination.
+    Make sure to mention if the systems is the final destination.
     Provide a brief summary of remarkable features of the system.
-    Remarkable features: ReserveLevel is pristine, WasDiscovered=0, WasMapped=0, Rings.
 """
 
 ## Example of the event ##

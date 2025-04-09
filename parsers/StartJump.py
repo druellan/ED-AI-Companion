@@ -13,7 +13,7 @@ def parse(entry):
 
 CONTEXT = """
     We are jumping to another system.
-    Remind me about the destination system.
+    Remind me about the destination system, specially if the system is the final destination.
     Remind me about the ship fuel.
     Mention the star only if there is something wrong with it.
 """

@@ -11,7 +11,6 @@ from config import (
 
 
 def parse(entry):
-    print("Reading the market file.")
     market_store = os.path.join(JOURNAL_DIRECTORY, "Market.json")
 
     products_to_report = 6
@@ -129,9 +128,11 @@ def parse(entry):
 
 CONTEXT = """
 We are looking at the buy/sell market.
-Allways report the top opportunities to buy and sell, but only if the profit is high.
+Report the top opportunities to buy and sell, but only if the profit is high (profit > 500 CR).
 Tell me if we have any cargo we can sell for a profit.
 Tell me if there are any rare goods available, don't mention it if there are none.
+Give me your impression about the market based on the potential profit.
+The profilt value is not important to mention.
 """
 
 ## Event Example ##
