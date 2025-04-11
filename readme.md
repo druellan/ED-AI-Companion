@@ -8,7 +8,12 @@ The idea is to provide audio feedback for the most common events in the game, su
 
 Since each event can have a personalized parser, post-processing and web content, such as *EDSM* data, can be injected before triggering the AI response. This also helps to reduce the size of the prompt.
 
-I'm also keeping a small static `ship-state.json` file for the ship fuel levels, last place visited, etc, that can be used to enrich the information on specific events.
+I'm also keeping a memory file for the ship state `ship-state.json` (fuel levels, last place visited, etc), for missions `missions_memory.json` and past events `event_memory.json`, all of it is injected in the system prompt.
+
+### Demo Videos
+[Reacting to undock, new destination, radio chatter and system arrival](https://vimeo.com/1074661030) (Edge TTS without audio filters)
+
+[Reacting to mining: core found](https://vimeo.com/1074660573) (Edge TTS with audio filters)
 
 ### To make it work
 You might need Python 3.x installed in the system.
