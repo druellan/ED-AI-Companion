@@ -59,3 +59,35 @@ def json_to_compact_text(data):
         return ""
     else:
         return str(data).replace(" ", "_")
+
+
+def log(type_str, message):
+    type_configs = {
+        "INFO": {"color": COLOR.BRIGHT_CYAN, "label": "INFO"},
+        "EVENT": {"color": COLOR.BRIGHT_CYAN, "label": "EVENT"},
+        "AI": {"color": COLOR.BRIGHT_YELLOW, "label": "AI"},
+        "DEBUG": {"color": COLOR.WHITE, "label": "DEBUG"},
+        "ERROR": {"color": COLOR.RED, "label": "ERROR"},
+        "SYSTEM": {
+            "color": COLOR.CYAN,
+            "label": "SYSTEM",
+        },
+    }
+
+    # Convert type_str to uppercase for consistency
+    type_str = type_str.upper()
+
+    config = type_configs.get(type_str, type_configs["INFO"])
+    from datetime import datetime
+
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    # SUPERSCRIPT = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+    # superscript = timestamp.translate(SUPERSCRIPT)
+
+    # Create padded label (8 characters total including [] brackets)
+    label_text = config["label"]
+    padded_label = f"[{label_text}]".ljust(8)
+
+    print(
+        f"{COLOR.BRIGHT_BLACK}{timestamp} {COLOR.END}{config['color']}{padded_label} {message}{COLOR.END}"
+    )

@@ -12,6 +12,7 @@ from config import (
 
 def parse(entry):
     market_store = os.path.join(JOURNAL_DIRECTORY, "Market.json")
+    return ""
 
     products_to_report = 6
 
@@ -122,17 +123,19 @@ def parse(entry):
     market_list["cargo_to_sell"] = cargo_to_sell
     market_list["buy_opportunities"] = buy_goods
     market_list["sell_opportunities"] = sell_goods
-    market_list["rare_goods"] = rare_goods
+    if rare_goods:
+        market_list["rare_goods"] = rare_goods
     return market_list
 
 
 CONTEXT = """
 We are looking at the buy/sell market.
-Report the top opportunities to buy and sell, but only if the profit is high (profit > 500 CR).
-Tell me if we have any cargo we can sell for a profit.
+We consider a high profit values > 500. We consider a bad profit any negative profit value.
+Give me your impression about the market based on an average profit of the market.
+Report the top opportunities to buy and sell, but only the ones with high profit, if any.
+Tell me if we have any cargo we can sell for a positive profit. Ignore otherwise.
 Tell me if there are any rare goods available, don't mention it if there are none.
-Give me your impression about the market based on the potential profit.
-The profilt value is not important to mention.
+Don't mention the actual profit value.
 """
 
 ## Event Example ##

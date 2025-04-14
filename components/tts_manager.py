@@ -5,8 +5,7 @@ import edge_tts
 from pygame import mixer
 from pedalboard import Pedalboard, Reverb, Chorus
 import soundfile as sf
-from components.utils import output
-from components.constants import COLOR
+from components.utils import log
 
 # Config.py
 from config import (
@@ -39,9 +38,9 @@ def send_local_text_to_voice(text):
     if "TTS_WINDOWS_LIST" in globals() and TTS_WINDOWS_LIST:
         for index, voice in enumerate(voices):
             if voice.name == TTS_WINDOWS_VOICE:
-                output(f"Voice {index}: {voice.name} < selected", COLOR.BRIGHT_WHITE)
+                log("info", f"Voice {index}: {voice.name} < selected")
             else:
-                output(f"Voice {index}: {voice.name}")
+                log("info", f"Voice {index}: {voice.name}")
 
     for index, voice in enumerate(voices):
         if voice.name == TTS_WINDOWS_VOICE:
@@ -79,9 +78,9 @@ def send_local_text_to_voice(text):
             os.remove(temp_file)
 
         except Exception as e:
-            output(f"Windows TTS error: {str(e)}", COLOR.RED)
+            log("error", f"Windows TTS error: {str(e)}")
     else:
-        output("Specified TTS voice not found.", COLOR.RED)
+        log("error", "Specified TTS voice not found.")
 
 
 # Text-to-Speech functions, using Edge TTS
@@ -118,10 +117,10 @@ async def send_edge_text_to_voice(text):
         os.remove(temp_file)
 
     except Exception as e:
-        output(f"Edge TTS error: {str(e)}", COLOR.RED)
+        log("error", f"Edge TTS error: {str(e)}")
         # Optionally fall back to Windows TTS
         if TTS_TYPE != "WINDOWS":
-            output("Falling back to Windows TTS", COLOR.YELLOW)
+            log("info", "Falling back to Windows TTS")
             await send_local_text_to_voice(text)
 
 

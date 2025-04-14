@@ -1,6 +1,8 @@
 import os
 import importlib
 
+from components.utils import log
+
 EVENT_PARSERS = {}
 
 # Get the directory containing the parser modules
@@ -23,7 +25,7 @@ for filename in os.listdir(parsers_dir):
                     "function": module.parse,
                     "context": module.CONTEXT,
                 }
-                print(f"Loaded parser for {event_name}")
+                # log("info", f"Loaded parser for {event_name}")
 
         except ImportError as e:
-            print(f"Error importing {module_name}: {e}")
+            log("error", f"Error importing {module_name}: {e}")

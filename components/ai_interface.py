@@ -1,8 +1,8 @@
 import os
 import json
+import requests
 from openai import OpenAI
-from components.utils import output, json_to_compact_text
-from components.constants import COLOR
+from components.utils import log, json_to_compact_text
 
 from components.state_manager import get_state_all
 from components.memory_manager import get_recent_memory
@@ -17,6 +17,7 @@ from config import (
     LLM_API_KEY,
     LLM_MODEL_NAME,
     LLM_MODEL_NAMES,
+    LLM_MAX_TOKENS_ALERT,
 )
 
 
@@ -42,8 +43,20 @@ def send_event_to_api(event_data):
             {"role": "system", "content": get_system_prompt()},
             {"role": "user", "content": get_user_prompt(event_data)},
         ],
-        temperature=0.2,
+        temperature=1.0,
     )
+
+    # Rough token estimation
+    # Based on 4 chars per token (GPT uses slightly different rules but this is a rough estimate)
+    system_prompt_length = round(len(get_system_prompt()) // 4)
+    user_prompt_length = round(len(get_user_prompt(event_data)) // 4)
+    estimated_tokens = system_prompt_length + user_prompt_length
+
+    # Log the token estimation
+    if estimated_tokens > LLM_MAX_TOKENS_ALERT:
+        log("AI", f"WARNING: estimated tokens: {estimated_tokens}")
+
+    log("AI", f"Estimated tokens: {estimated_tokens}")
 
     # Send the messages variable to a file
     with open("last_prompt.json", "w") as file:
@@ -62,7 +75,7 @@ def send_event_to_api(event_data):
 
     # Check if completion has choices
     if not completion.choices:
-        output("No message from API, trying next LLM", COLOR.YELLOW)
+        log("error", "No message from API, trying next LLM")
         return error_message
 
     return completion.choices[0].message.content.strip()
@@ -98,3 +111,26 @@ def get_user_prompt(context):
     user_prompt = USER_PROMPT.replace("{event_new}", str(context))
 
     return user_prompt
+
+
+# Check the rate limits
+def check_openrouter_rate_limits():
+    response = requests.get(
+        url="https://openrouter.ai/api/v1/auth/key",
+        headers={"Authorization": f"Bearer {LLM_API_KEY}"},
+    )
+
+    # Get rate limits from the response data
+    data = response.json().get("data", {})
+    limit = data.get("limit")
+    limit_remaining = data.get("limit_remaining")
+    rate_limit = data.get("rate_limit", {})
+    rate_limit_requests = rate_limit.get("requests")
+    interval = rate_limit.get("interval")
+
+    log(
+        "info",
+        f"API Limit: {limit} ({limit_remaining}) | Rate Limit Requests: {rate_limit_requests} Interval: {interval}",
+    )
+
+    return response

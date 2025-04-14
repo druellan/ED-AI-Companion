@@ -1,7 +1,6 @@
 import os
 import json
-from components.constants import COLOR
-from components.utils import output, get_latest_journal_file
+from components.utils import log, get_latest_journal_file
 
 
 from config import (
@@ -15,7 +14,7 @@ def init_state():
     journal_file_path = get_latest_journal_file(JOURNAL_DIRECTORY)
 
     if not journal_file_path:
-        output("No journal files found.", COLOR.RED)
+        log("error", "No journal files found.")
         return
 
     with open(journal_file_path, "r") as file:
@@ -56,7 +55,7 @@ def add_states(status):
     state_file_path = "ship-state.json"
 
     if DEBUG_STATE_UPDATE:
-        output(f"Updating status: {status}", COLOR.CYAN)
+        log("debug", f"Updating status: {status}")
 
     # Load existing data or create empty dict
     try:

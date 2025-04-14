@@ -22,7 +22,9 @@ def parse(entry):
 
 CONTEXT = """
 We targeted a ship for inspection.
-Try not to repeat consecutive scans.
+Try not to repeat identical scans. Check the previous events.
 Notify me if the ship has a big bounty.
-Notify me if the ship is damaged, check the HullHealth. Do not notify if the ship helath is above at 80%.
+Notify me if the ship HullHealth is low.
+You can comment about the name of the ship or the pilot if you find them funny.
+Ignore the event if there is nothing to report.
 """
