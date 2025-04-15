@@ -30,7 +30,7 @@ def send_event_to_api(event_data):
             "X-Title": "ED:AI Companion",
             "HTTP-Referer": "ED:AI Companion",
         },
-        timeout=20.0,
+        timeout=0.2,
     )
 
     # Start the client and the model
