@@ -12,7 +12,6 @@ from config import (
 
 def parse(entry):
     market_store = os.path.join(JOURNAL_DIRECTORY, "Market.json")
-    return ""
 
     products_to_report = 6
 
@@ -130,7 +129,7 @@ def parse(entry):
 
 CONTEXT = """
 We are looking at the buy/sell market.
-We consider a high profit values > 500. We consider a bad profit any negative profit value.
+We consider a high profit, profit values > 500. We consider a bad profit any negative profit value.
 Give me your impression about the market based on an average profit of the market.
 Report the top opportunities to buy and sell, but only the ones with high profit, if any.
 Tell me if we have any cargo we can sell for a positive profit. Ignore otherwise.

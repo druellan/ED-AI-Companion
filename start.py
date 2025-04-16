@@ -6,7 +6,7 @@ import time
 
 # import requests
 
-from components.ai_interface import send_event_to_api
+from components.ai_interface import send_event_to_api, check_openrouter_rate_limits
 from components.tts_manager import send_text_to_voice
 
 from components.state_manager import update_state, init_state
@@ -14,13 +14,12 @@ from components.memory_manager import add_memory, init_memory
 from components.mission_manager import update_missions, init_missions
 
 from components.utils import (
-    output,
+    log,
     get_latest_journal_file,
     cleanup_event,
     json_to_compact_text,
     merge_true_events,
 )
-from components.constants import COLOR
 
 from parsers import EVENT_PARSERS
 
@@ -55,10 +54,10 @@ VERSION = "0.1.5"
 def monitor_journal():
     current_journal = get_latest_journal_file(JOURNAL_DIRECTORY)
     if not current_journal:
-        output("No journal files found.", COLOR.RED)
+        log("system", "No journal files found.")
         return
 
-    output(f"Monitoring journal file: {current_journal}")
+    log("system", f"Monitoring journal file: {current_journal}")
 
     with open(current_journal, "r", encoding="utf-8") as file:
         file.seek(0, os.SEEK_END)
@@ -66,7 +65,7 @@ def monitor_journal():
             # Check for a new journal file
             new_journal = get_latest_journal_file(JOURNAL_DIRECTORY)
             if new_journal != current_journal:
-                output(f"Switching to new journal file: {new_journal}")
+                log("system", f"Switching to new journal file: {new_journal}")
                 current_journal = new_journal
                 file.close()
                 file = open(current_journal, "r", encoding="utf-8")
@@ -101,7 +100,7 @@ def process_journal_entries(lines):
             continue
 
         if DEBUG_EVENT_DUMP:
-            output(entry)
+            log("debug", entry)
 
         update_state(entry)
         add_memory(entry)
@@ -126,7 +125,7 @@ def process_event_batch(batch):
         return
 
     event_type = batch[0]["event"]
-    output(f"Processing {len(batch)} {event_type} events", COLOR.BRIGHT_CYAN)
+    log("event", f"Processing {len(batch)} {event_type} events")
 
     # Clean up each entry in the batch
     clean_batch = [
@@ -144,7 +143,7 @@ def process_event_batch(batch):
             entry_strings.append(json_to_compact_text(entry))
 
     if not entry_strings:
-        output("Parser ignored all events", COLOR.BRIGHT_CYAN)
+        log("event", "Parser ignored all events")
         return False
 
     # Add context if available
@@ -158,76 +157,21 @@ def process_event_batch(batch):
         final_string = "Events: " + "; ".join(entry_strings)
 
     if DEBUG_PARSER_PROMPT:
-        output(final_string, COLOR.CYAN)
+        log("debug", final_string)
 
     # If the event is in the list, send it to the AI
     if event_type in EVENT_LIST:
-        output(f"Reacting {event_type} events", COLOR.BRIGHT_CYAN)
+        log("event", f"Reacting to {event_type} events")
         response_text = send_event_to_api(final_string)
         if response_text:
             if DEBUG_AI_RESPONSE:
                 if response_text.startswith("NULL"):
-                    output("AI dropped the response.", COLOR.CYAN)
+                    log("AI", "(AI dropped the response).")
                     return False
-                output(f"AI response: {response_text}", COLOR.CYAN)
+                log("AI", f"{response_text}")
             speak_response(response_text)
     else:
-        output(f"Ignoring {event_type} events", COLOR.BRIGHT_CYAN)
-
-
-# Operate on the received event, check if we have specific parsers for it
-def generate_response(entry):
-    event = entry.get("event", False)
-    # Hard filter events
-    hardFilered = ["Fileheader", "Shutdown", "Music"]
-    output(f"Received event: {event}", COLOR.BRIGHT_CYAN)
-
-    if not event:
-        return
-
-    if event in hardFilered:
-        return
-
-    # Check if the event has a parser
-    if event in EVENT_PARSERS:
-        parsed_entry = EVENT_PARSERS[event]["function"](entry)
-        output(f"Parsed event: {event}", COLOR.BRIGHT_CYAN)
-    else:
-        parsed_entry = entry
-
-    if parsed_entry is False:
-        output("Parser ignored the event", COLOR.BRIGHT_CYAN)
-        return False
-
-    if event in EVENT_PARSERS and "context" in EVENT_PARSERS[event]:
-        entry_string = (
-            EVENT_PARSERS[event]["context"]
-            + "Data: "
-            + json_to_compact_text(parsed_entry)
-        )
-    else:
-        entry_string = json_to_compact_text(parsed_entry)
-
-    if DEBUG_PARSER_PROMPT:
-        output(entry_string, COLOR.CYAN)
-
-    # If the event is in the list, send it to the AI
-    if event in EVENT_LIST:
-        output(f"Reacting to event: {event}", COLOR.BRIGHT_CYAN)
-        response_text = send_event_to_api(entry_string)
-
-    else:
-        output(f"Ignoring the event: {event}", COLOR.BRIGHT_CYAN)
-        return False
-
-    # Output the AI response
-    if response_text:
-        if DEBUG_AI_RESPONSE:
-            if response_text.startswith("NULL"):
-                output("AI dropped the response.", COLOR.CYAN)
-                return False
-            output(f"AI response: {response_text}", COLOR.CYAN)
-        return response_text
+        log("event", f"Ignoring {event_type} events")
 
 
 # Send the response to the TTS engine, based on the config file
@@ -255,18 +199,26 @@ if __name__ == "__main__":
     )
     os.system("")  # enable VT100 Escape Sequence for WINDOWS 10 Ver. 1607
 
-    output(f"\nWelcome to ED Companion V{VERSION}, Commander", COLOR.BRIGHT_WHITE)
-    output(f"Main model to use: {LLM_MODEL_NAME}")
+    log("info", f"Welcome to ED:AI Companion V{VERSION}, Commander")
+    log("info", f"Main model to use: {LLM_MODEL_NAME}")
+    check_openrouter_rate_limits()
+    log(
+        "ai",
+        send_event_to_api(
+            "Reply with a quick message to aknoledge you are ready to receive data."
+        ),
+    )
+
     if TTS_TYPE == "WINDOWS":
-        output(f"Text-to-Speech: type {TTS_TYPE} voice {TTS_WINDOWS_VOICE}")
+        log("info", f"Text-to-Speech: type {TTS_TYPE} voice {TTS_WINDOWS_VOICE}")
     else:
-        output(f"Text-to-Speech: type {TTS_TYPE} voice {TTS_EDGE_VOICE}")
+        log("info", f"Text-to-Speech: type {TTS_TYPE} voice {TTS_EDGE_VOICE}")
 
     init_state()
     init_memory()
     init_missions()
 
-    output("All systems ready!", COLOR.BRIGHT_GREEN)
+    log("info", "All systems ready!")
     speak_response("All systems ready.")
 
     monitor_journal()

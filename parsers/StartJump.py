@@ -13,9 +13,8 @@ def parse(entry):
 
 CONTEXT = """
     We are jumping to another system.
-    Remind me about the destination system.
-    Remind me about the ship fuel.
-    Mention the star only if the start type is unusual or dangerous.
+    Remind me if the ship fuel is low.
+    Reming my if the star can be dangerous or non-scoopable.
 """
 
 # { "timestamp":"2025-02-17T01:19:15Z", "event":"StartJump", "JumpType":"Hyperspace", "Taxi":false, "StarSystem":"Gurughna", "SystemAddress":3382588773082, "StarClass":"K" }

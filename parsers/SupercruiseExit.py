@@ -29,10 +29,11 @@ def parse(entry):
 
 
 CONTEXT = """
-    We have exited supercruise near a body.
-    Give me a very brief summary of the body.
-    If the body is a station: notify me if my ship can't dock at the station due to the size.
-    If the body is a station: notify me if the cargo I have might be illegal.
+    We have exited supercruise.
+    If the near body is a start, ignore this event.
+    If the near body is a station: notify me if my ship can't dock at the station due to the size.
+    If the near body is a station: notify me if the cargo I have might be illegal.
+    Summarize any other information you might find relevant based on my status.
 """
 # {'event': 'SupercruiseExit', 'Taxi': False, 'Multicrew': False, 'StarSystem': 'Morten-Marte', 'SystemAddress': 2008132129498, 'Body': 'James Sneddon', 'BodyID': 4, 'BodyType': 'Station'}
 # {'event': 'SupercruiseExit', 'Body': 'ER 8 6', 'BodyID': 54, 'BodyType': 'Planet'}

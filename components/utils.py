@@ -81,13 +81,13 @@ def log(type_str, message):
     from datetime import datetime
 
     timestamp = datetime.now().strftime("%H:%M:%S")
-    # SUPERSCRIPT = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
-    # superscript = timestamp.translate(SUPERSCRIPT)
+    SUPERSCRIPT = str.maketrans("0123456789:", "⁰¹²³⁴⁵⁶⁷⁸⁹·")
+    superscript = timestamp.translate(SUPERSCRIPT)
 
-    # Create padded label (8 characters total including [] brackets)
     label_text = config["label"]
-    padded_label = f"[{label_text}]".ljust(8)
+    padded_text = label_text.center(7)
+    boxed_label = f"❬{padded_text}❭"
 
     print(
-        f"{COLOR.BRIGHT_BLACK}{timestamp} {COLOR.END}{config['color']}{padded_label} {message}{COLOR.END}"
+        f"{COLOR.BRIGHT_BLACK}{superscript} {COLOR.END}{config['color']}{boxed_label} {message}{COLOR.END}"
     )

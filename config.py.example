@@ -31,7 +31,7 @@ TTS_EDGE_RATE = "+25%"
 TTS_EDGE_VOLUME = "-50%"
 TTS_EDGE_PITCH = "+0Hz"
 
-# Microsoft Eva (Cortana's voice) is not avaiable in Windows by default,
+# Microsoft Eva (Cortana's voice) is not available in Windows by default,
 # try following this guide to activate it: https://github.com/watermarkhu/enable-microsoft-eva-tts
 TTS_WINDOWS_VOICE = "Microsoft Eva Mobile - English (United States)"
 TTS_WINDOWS_RATE = 180
@@ -43,7 +43,7 @@ TTS_WINDOWS_LIST = False
 # The URL to the EDSM API to fetch information about the target system
 EDSM_API = "https://www.edsm.net"
 
-# The initial prompt sent to the asistant. Can be anything you want to remark globally. Parsers have their own prompts.
+# The initial prompt sent to the assistant. Can be anything you want to remark globally. Parsers have their own prompts.
 SYSTEM_PROMPT = """# Context
 You are a computer AI inside my starship in the game Elite Dangerous.
 I'm going to provide you events from the ship journal and other relevant data, in compact text format.
@@ -102,7 +102,7 @@ A body has a crashed ship.
 
 # Tools you can use to get more information. Use as you feel fit.
 Usage: output the function, no formatting, nothing more as response.
-## get_memory(event_name [optional]) - retreives the last 100 events from the ship journal
+## get_memory(event_name [optional]) - retrieves the last 100 events from the ship journal
 ## get_system(system_name) - get information about a system from EDSM
 ## get_system_bodies(system_name) - get information about celestial bodies in a system from EDSM
 ## get_system_scan(system_name) - get estimated value and valuable bodies in a system from EDSM
@@ -129,7 +129,7 @@ USER_PROMPT = """# This is the event that just happened, and a small context spe
 # Type T (Brown dwarf): not scoopable for fuel.
 # Type Y (Brown dwarf): not scoopable for fuel.
 
-# Change to True or False, depending if you want the asistant to react or ignore each event
+# Change to True or False, depending if you want the assistant to react or ignore each event
 
 # Startup Events
 STARTUP_EVENTS = {
