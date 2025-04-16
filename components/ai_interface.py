@@ -30,7 +30,7 @@ def send_event_to_api(event_data):
             "X-Title": "ED:AI Companion",
             "HTTP-Referer": "ED:AI Companion",
         },
-        timeout=0.2,
+        timeout=20,
     )
 
     # Start the client and the model
@@ -43,7 +43,7 @@ def send_event_to_api(event_data):
             {"role": "system", "content": get_system_prompt()},
             {"role": "user", "content": get_user_prompt(event_data)},
         ],
-        temperature=1.0,
+        temperature=0.2,
     )
 
     # Rough token estimation
