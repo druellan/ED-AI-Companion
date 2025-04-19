@@ -6,6 +6,7 @@ def parse(entry):
 
 CONTEXT = """
 The ship shields are up or down.
+Alert if the shields are down.
 """
 
 ## { "timestamp":"2025-03-01T22:33:25Z", "event":"ShieldState", "ShieldsUp":false }

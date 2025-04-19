@@ -34,9 +34,9 @@ def parse(entry):
 
 
 CONTEXT = """
-    We are targetting our next FSD destination.
+    We are targeting our next FSD destination.
     If RemainingJumpsInRoute > 1 the target is a transition system to our destination, otherwise, it is the final destination.
-    Make sure to mention if the systems is the final destination.
+    Mention if the systems is the final destination, otherwise, is not important to consider.
     Provide a brief summary of remarkable features of the system.
 """
 

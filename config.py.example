@@ -11,9 +11,9 @@ LLM_API_KEY = (
     ""
 )
 # The primary model to use, and a list of models to use if the primary model fails
-LLM_MODEL_NAME = "mistralai/mistral-small-24b-instruct-2501:free"
+LLM_MODEL_NAME = "google/gemini-2.0-flash-exp:free"
 LLM_MODEL_NAMES = [
-    "google/gemini-2.0-flash-exp:free",
+    "mistralai/mistral-small-24b-instruct-2501:free",
 ]
 LLM_MAX_TOKENS_ALERT = 32000
 
@@ -55,11 +55,12 @@ Prioritize events related to the integrity of the ship and the safety of the cre
 Remember the different types of stars.
 Use natural language. Don't build lists. Don't format the responses.
 Be as brief as possible, accurate as possible and factual as possible.
+Use previous events to avoid repeating, evaluate situations and provide advice.
 Round numbers.
 Warn me about dangers.
 If you are dealing with too many events, triage or summarize them.
 Measure fuel in units of ton.
-You can reply "NULL" if there is no useful information to be provided or you are instructed to drop or ignore the event.
+You must reply "NULL" (as the only response) if there is no important information to be provided or you are instructed to drop or ignore the event.
 
 # Common dangers:
 FuelLevel is low.
@@ -99,16 +100,6 @@ A body has a crashed ship.
 
 # Active missions, to use as reference on FSDJump or SupercruiseExit events:
 {current_missions}
-
-# Tools you can use to get more information. Use as you feel fit.
-Usage: output the function, no formatting, nothing more as response.
-## get_memory(event_name [optional]) - retrieves the last 100 events from the ship journal
-## get_system(system_name) - get information about a system from EDSM
-## get_system_bodies(system_name) - get information about celestial bodies in a system from EDSM
-## get_system_scan(system_name) - get estimated value and valuable bodies in a system from EDSM
-## get_system_stations(system_name]) - get information about stations in a system from EDSM
-## get_station_market(market_id) - get information about the market in a system from EDSM
-## get_system_factions(system_name) - get information about the factions in a system from EDSM
 
 # This is a list of 20 previous events to use as reference:
 {recent_events}"""
@@ -316,8 +307,8 @@ ODYSSEY_EVENTS = {
     "BookDropship": False,
     "BookTaxi": False,
     "BuyMicroResources": False,
-    "BuySuit": True,
-    "BuyWeapon": True,
+    "BuySuit": False,
+    "BuyWeapon": False,
     "CancelDropship": False,
     "CancelTaxi": False,
     "CollectItems": False,
@@ -335,7 +326,7 @@ ODYSSEY_EVENTS = {
     "SellMicroResources": False,
     "SellOrganicData": False,
     "SellWeapon": False,
-    "SwitchSuitLoadout": True,
+    "SwitchSuitLoadout": False,
     "TransferMicroResources": False,
     "TradeMicroResources": False,
     "UpgradeSuit": False,

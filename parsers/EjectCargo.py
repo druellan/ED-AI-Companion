@@ -7,5 +7,5 @@ def parse(entry):
 
 CONTEXT = """
 Some cargo has been ejected.
-If the cargo is not "abandoned", notify me.
+If the cargo is not "abandoned", notify me, otherwise, ignore the event.
 """

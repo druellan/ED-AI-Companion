@@ -165,7 +165,7 @@ def process_event_batch(batch):
         response_text = send_event_to_api(final_string)
         if response_text:
             if DEBUG_AI_RESPONSE:
-                if response_text.startswith("NULL"):
+                if "NULL" in response_text:
                     log("AI", "(AI dropped the response).")
                     return False
                 log("AI", f"{response_text}")
@@ -202,12 +202,6 @@ if __name__ == "__main__":
     log("info", f"Welcome to ED:AI Companion V{VERSION}, Commander")
     log("info", f"Main model to use: {LLM_MODEL_NAME}")
     check_openrouter_rate_limits()
-    log(
-        "ai",
-        send_event_to_api(
-            "Reply with a quick message to aknoledge you are ready to receive data."
-        ),
-    )
 
     if TTS_TYPE == "WINDOWS":
         log("info", f"Text-to-Speech: type {TTS_TYPE} voice {TTS_WINDOWS_VOICE}")

@@ -1,7 +1,8 @@
 __pycache__
+.clinerules
 config.py
 ship-state.json
 last_prompt.json
 event_memory.json
-event_missions.json
+missions_memory.json
 tts-temp.*
