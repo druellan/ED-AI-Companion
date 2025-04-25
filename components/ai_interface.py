@@ -1,23 +1,26 @@
-import os
+# components/ai_interface.py
 import json
+import os
+
 import requests
 from openai import OpenAI
-from components.utils import log, json_to_compact_text
 
-from components.state_manager import get_state_all
+from components.ai_tools import get_available_tools
 from components.memory_manager import get_recent_memory
 from components.mission_manager import get_missions
+from components.state_manager import get_state_all
+from components.utils import json_to_compact_text, log
 
 # Config.py
 from config import (
     JOURNAL_DIRECTORY,
-    SYSTEM_PROMPT,
-    USER_PROMPT,
-    LLM_ENDPOINT,
     LLM_API_KEY,
+    LLM_ENDPOINT,
+    LLM_MAX_TOKENS_ALERT,
     LLM_MODEL_NAME,
     LLM_MODEL_NAMES,
-    LLM_MAX_TOKENS_ALERT,
+    SYSTEM_PROMPT,
+    USER_PROMPT,
 )
 
 
@@ -45,6 +48,8 @@ def send_event_to_api(event_data):
         ],
         temperature=0.1,
     )
+
+    log("debug", completion)
 
     # Rough token estimation
     # Based on 4 chars per token (GPT uses slightly different rules but this is a rough estimate)
@@ -101,8 +106,9 @@ def get_system_prompt():
         .replace("{recent_events}", json_to_compact_text(recent_events))
         .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
         .replace("{current_missions}", json_to_compact_text(missions))
+        .replace("{ai_tools_list}", get_available_tools())
     )
-
+    # log("debug", system_prompt)
     return system_prompt
 
 

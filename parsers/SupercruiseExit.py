@@ -1,4 +1,5 @@
 import requests
+
 from config import EDSM_API
 from start import cleanup_event
 
@@ -30,7 +31,7 @@ def parse(entry):
 
 CONTEXT = """
     We have exited supercruise.
-    If the near body is a start, ignore this event.
+    If the near body is a star, ignore this event.
     If the near body is a station: notify me if my ship can't dock at the station due to the size.
     If the near body is a station: notify me if the cargo I have might be illegal.
     Summarize any other information you might find relevant based on my status.

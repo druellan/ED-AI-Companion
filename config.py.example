@@ -5,6 +5,7 @@ JOURNAL_DIRECTORY = os.path.join(
     os.environ["USERPROFILE"], "Saved Games", "Frontier Developments", "Elite Dangerous"
 )
 
+
 # Enter the API endpoint of the LLM service you want to use, the API Key and the model
 LLM_ENDPOINT = "https://openrouter.ai/api/v1/"
 LLM_API_KEY = (
@@ -17,11 +18,16 @@ LLM_MODEL_NAMES = [
 ]
 LLM_MAX_TOKENS_ALERT = 32000
 
-# Use WINDOWS for the built in TTS Windows feature
-# Use EDGE for the Edge Broser/Azure TTS service
-TTS_TYPE = "WINDOWS"
+# You can turn off the use of tools
+# The AI use tools to retrieive more information about the events, and can consume 3 times the amount of tokens
+LLM_USE_TOOLS = True
 
-# Add effects for the TTS voice
+
+# Use WINDOWS for the built in TTS Windows feature
+# Use EDGE for the Edge Browser/Azure TTS service, can introduce some extra latency
+TTS_TYPE = "EDGE"
+
+# Add effects to the TTS voice
 TTS_EFFECTS = True
 
 # The voice to use for each of the TTS services
@@ -40,27 +46,35 @@ TTS_WINDOWS_VOLUME = 0.8
 # List all the Windows voices available in the system
 TTS_WINDOWS_LIST = False
 
+
 # The URL to the EDSM API to fetch information about the target system
 EDSM_API = "https://www.edsm.net"
 
-# The initial prompt sent to the assistant. Can be anything you want to remark globally. Parsers have their own prompts.
+
 SYSTEM_PROMPT = """# Context
 You are a computer AI inside my starship in the game Elite Dangerous.
 I'm going to provide you events from the ship journal and other relevant data, in compact text format.
 Always talk to me directly as Commander.
 
-# I want you to always:
+# Response directives
 Use information and facts that are related to the game Elite Dangerous and the in-game universe.
-Prioritize events related to the integrity of the ship and the safety of the crew.
-Remember the different types of stars.
 Use natural language. Don't build lists. Don't format the responses.
 Be as brief as possible, accurate as possible and factual as possible.
-Use previous events to avoid repeating, evaluate situations and provide advice.
 Round numbers.
-Warn me about dangers.
-If you are dealing with too many events, triage or summarize them.
 Measure fuel in units of ton.
-You must reply "NULL" (as the only response) if there is no important information to be provided or you are instructed to drop or ignore the event.
+You must reply "NULL" (only response) if there is no important information to be provided or you are instructed to drop or ignore the event.
+
+# I want you to always:
+Warn me about dangers.
+Prioritize events related to the integrity of the ship and the safety of the crew.
+Use previous events to avoid repeating, evaluate situations and provide advice.
+If you are dealing with too many events, triage or summarize them.
+Remember the different types of stars.
+
+# I want you to occasionally:
+Give input about the situation
+Use the tools to retrieve interesting information about the ship and its position position (system, station, near body)
+Give some facts about space and the universe, always related to the current ship situation
 
 # Common dangers:
 FuelLevel is low.
@@ -101,11 +115,19 @@ A body has a crashed ship.
 # Active missions, to use as reference on FSDJump or SupercruiseExit events:
 {current_missions}
 
+# Tools you can use to get more information. Use them as you feel fit.
+Usage: output just the function in a new line, no other indicators or format needed.
+Example: get_system_bodies('Hyperion')
+Take the context in account while parsing the response from the tool. Try no to go off topic.
+Inform me you asked for more information about the topic.
+{ai_tools_list}
+
 # This is a list of 20 previous events to use as reference:
 {recent_events}"""
 
 USER_PROMPT = """# This is the event that just happened, and a small context specific to the event:
 {event_new}"""
+
 
 # Remember this about stars:
 # Type K (Orange star): scoopable for fuel.
@@ -121,6 +143,7 @@ USER_PROMPT = """# This is the event that just happened, and a small context spe
 # Type Y (Brown dwarf): not scoopable for fuel.
 
 # Change to True or False, depending if you want the assistant to react or ignore each event
+
 
 # Startup Events
 STARTUP_EVENTS = {
@@ -699,6 +722,7 @@ MEMORY_EVENTS = [
     "LegalStateChanged",
     "WeaponSelected",
 ]
+
 
 # Debug flags. You can use these to improve the information displayed in the console
 DEBUG_EVENT_DUMP = False

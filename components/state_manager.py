@@ -1,11 +1,12 @@
-import os
+## components/state_manager.py
+
 import json
-from components.utils import log, get_latest_journal_file
+import os
 
-
+from components.utils import get_latest_journal_file, log
 from config import (
-    JOURNAL_DIRECTORY,
     DEBUG_STATE_UPDATE,
+    JOURNAL_DIRECTORY,
 )
 
 

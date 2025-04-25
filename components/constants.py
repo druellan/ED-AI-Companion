@@ -1,3 +1,6 @@
+# components/constants.py
+
+
 class COLOR:
     # Regular colors
     BLACK = "\033[30m"

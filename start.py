@@ -1,57 +1,57 @@
 # ED:AI Companion by druellan
 
-import os
+import asyncio  # Import asyncio for running async functions
 import json
+import os
+import re  # Import the regex module
+import sys  # Import the sys module
 import time
 
-# import requests
-
-from components.ai_interface import send_event_to_api, check_openrouter_rate_limits
-from components.tts_manager import send_text_to_voice
-
-from components.state_manager import update_state, init_state
+from components import ai_tools  # Import the ai_tools module
+from components.ai_interface import check_openrouter_rate_limits, send_event_to_api
 from components.memory_manager import add_memory, init_memory
-from components.mission_manager import update_missions, init_missions
-
+from components.mission_manager import init_missions, update_missions
+from components.state_manager import init_state, update_state
+from components.tts_manager import send_text_to_voice
 from components.utils import (
-    log,
-    get_latest_journal_file,
     cleanup_event,
+    get_latest_journal_file,
     json_to_compact_text,
+    log,
     merge_true_events,
 )
 
-from parsers import EVENT_PARSERS
-
 # Config.py
 from config import (
-    JOURNAL_DIRECTORY,
-    LLM_MODEL_NAME,
-    TTS_WINDOWS_VOICE,
-    TTS_EDGE_VOICE,
-    TTS_TYPE,
-    STARTUP_EVENTS,
     COMBAT_EVENTS,
-    TRAVEL_EVENTS,
-    EXPLORATION_EVENTS,
-    TRADE_EVENTS,
-    POWERPLAY_EVENTS,
-    SQUADRON_EVENTS,
-    STATION_SERVICES_EVENTS,
-    FLEET_CARRIER_EVENTS,
-    ODYSSEY_EVENTS,
-    OTHER_EVENTS,
-    STATUS_EVENTS,
+    DEBUG_AI_RESPONSE,
     DEBUG_EVENT_DUMP,
     DEBUG_PARSER_PROMPT,
-    DEBUG_AI_RESPONSE,
+    EXPLORATION_EVENTS,
+    FLEET_CARRIER_EVENTS,
+    JOURNAL_DIRECTORY,
+    LLM_MODEL_NAME,
+    LLM_USE_TOOLS,
+    ODYSSEY_EVENTS,
+    OTHER_EVENTS,
+    POWERPLAY_EVENTS,
+    SQUADRON_EVENTS,
+    STARTUP_EVENTS,
+    STATION_SERVICES_EVENTS,
+    STATUS_EVENTS,
+    TRADE_EVENTS,
+    TRAVEL_EVENTS,
+    TTS_EDGE_VOICE,
+    TTS_TYPE,
+    TTS_WINDOWS_VOICE,
 )
+from parsers import EVENT_PARSERS
 
 VERSION = "0.1.5"
 
 
 # Monitor the journal files for new events
-def monitor_journal():
+async def monitor_journal():
     current_journal = get_latest_journal_file(JOURNAL_DIRECTORY)
     if not current_journal:
         log("system", "No journal files found.")
@@ -74,12 +74,12 @@ def monitor_journal():
             file.seek(0, os.SEEK_END)
 
             if new_lines:
-                process_journal_entries(new_lines)
+                await process_journal_entries(new_lines)
             else:
                 time.sleep(1)
 
 
-def process_journal_entries(lines):
+async def process_journal_entries(lines):
     entries = []
     for line in lines:
         try:
@@ -109,7 +109,7 @@ def process_journal_entries(lines):
         # If this is a new event type, process the previous batch
         if event_type != current_event_type:
             if current_batch:
-                process_event_batch(current_batch)
+                await process_event_batch(current_batch)
             current_batch = [entry]
             current_event_type = event_type
         else:
@@ -117,10 +117,10 @@ def process_journal_entries(lines):
 
     # Process the final batch
     if current_batch:
-        process_event_batch(current_batch)
+        await process_event_batch(current_batch)
 
 
-def process_event_batch(batch):
+async def process_event_batch(batch):
     if not batch:
         return
 
@@ -164,22 +164,94 @@ def process_event_batch(batch):
         log("event", f"Reacting to {event_type} events")
         response_text = send_event_to_api(final_string)
         if response_text:
+            # Process tool calls first
+            if LLM_USE_TOOLS:
+                tool_output = process_tools(response_text, final_string)
+                if tool_output is not None:
+                    response_text = tool_output
+
+            # If no tool call was detected, proceed with speaking the response
             if DEBUG_AI_RESPONSE:
                 if "NULL" in response_text:
                     log("AI", "(AI dropped the response).")
-                    return False
+                    return
                 log("AI", f"{response_text}")
-            speak_response(response_text)
+            await speak_response(response_text)
     else:
         log("event", f"Ignoring {event_type} events")
 
 
 # Send the response to the TTS engine, based on the config file
-def speak_response(response):
+async def speak_response(response):
     if response is False:
         return
 
-    send_text_to_voice(response)
+    await send_text_to_voice(response)
+
+
+# Process the AI's response to detect and execute tool calls
+def process_tools(response_text, event_string):
+    """
+    Inspects the AI response for tool calls and executes them.
+    Expected format: function_name('argument') or function_name()
+    """
+    tool_output = None
+    # Regex to find function calls like function_name() or function_name('...')
+    # It captures the function name and the content within single quotes (if any)
+    tool_call_pattern = re.compile(r"^\s*(\w+)\s*\(\s*(?:'(.*?)')?\s*\)\s*$")
+
+    for line in response_text.splitlines():
+        match = tool_call_pattern.match(line)
+        if match:
+            tool_name = match.group(1)
+            # The argument is in group 2, which can be None if no argument was provided
+            tool_arg = match.group(2)
+
+            log("info", f"Detected tool call: {tool_name} with argument: {tool_arg}")
+
+            tool_function = getattr(ai_tools, tool_name, None)
+
+            if tool_function and callable(tool_function):
+                try:
+                    if tool_arg is not None:
+                        tool_output = tool_function(tool_arg)
+                    else:
+                        tool_output = tool_function()
+
+                    # log("AI", f"Tool '{tool_name}' executed. Output: {tool_output}")
+                    # For now, we just return the first tool output found.
+                    # Future steps might involve processing multiple tool calls
+                    # or sending the output back to the AI.
+
+                    # let's recursively call the AI again, but this time we return the function response
+                    formatted_tool_output = json_to_compact_text(
+                        json.dumps(tool_output)
+                    )
+                    response_to_ai = f"""
+{event_string}
+
+# This was your response
+{response_text} 
+
+You invoked a function, this is the result:
+{formatted_tool_output}
+                    """
+                    # log("debug", response_to_ai)
+                    final_response = send_event_to_api(response_to_ai)
+                    return final_response
+
+                except Exception as e:
+                    log("error", f"Error executing tool '{tool_name}': {e}")
+                    continue
+            else:
+                log("error", f"Tool function '{tool_name}' not found or not callable.")
+                continue
+        else:
+            # Log lines that are not tool calls if needed for debugging
+            # log("debug", f"Line did not match tool pattern: {line}")
+            pass
+
+    return None
 
 
 if __name__ == "__main__":
@@ -213,6 +285,6 @@ if __name__ == "__main__":
     init_missions()
 
     log("info", "All systems ready!")
-    speak_response("All systems ready.")
+    asyncio.run(speak_response("All systems ready."))
 
-    monitor_journal()
+    asyncio.run(monitor_journal())

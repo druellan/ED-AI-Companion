@@ -5,7 +5,7 @@ def parse(entry):
 CONTEXT = """
     We are under attack.
     Check immediate previous events for a "$Pirate_OnDeclarePiracyAttack" message, that might be the attacker.
-    Don't repeat this event if you find other similar events in the previous events list.
+    These events can repear a lot, check previous events and ignore this event if you see repetition.
 """
 
 ## { "timestamp":"2025-03-15T16:33:40Z", "event":"UnderAttack", "Target":"You" }

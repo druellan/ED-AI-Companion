@@ -1,32 +1,36 @@
+## components/tts_manager.py
+
 import os
 import time
-import pyttsx3
+
 import edge_tts
-from pygame import mixer
-from pedalboard import Pedalboard, Reverb, Chorus
+import pyttsx3
 import soundfile as sf
+from pedalboard import Chorus, Pedalboard, Reverb
+from pygame import mixer
+
 from components.utils import log
 
 # Config.py
 from config import (
-    TTS_WINDOWS_VOICE,
-    TTS_WINDOWS_RATE,
-    TTS_WINDOWS_VOLUME,
-    TTS_WINDOWS_LIST,
-    TTS_EDGE_VOICE,
-    TTS_EDGE_RATE,
-    TTS_EDGE_VOLUME,
     TTS_EDGE_PITCH,
-    TTS_TYPE,
+    TTS_EDGE_RATE,
+    TTS_EDGE_VOICE,
+    TTS_EDGE_VOLUME,
     TTS_EFFECTS,
+    TTS_TYPE,
+    TTS_WINDOWS_LIST,
+    TTS_WINDOWS_RATE,
+    TTS_WINDOWS_VOICE,
+    TTS_WINDOWS_VOLUME,
 )
 
 
-def send_text_to_voice(text):
+async def send_text_to_voice(text):
     if TTS_TYPE == "WINDOWS":
         send_local_text_to_voice(text)
     else:
-        send_edge_text_to_voice(text)
+        await send_edge_text_to_voice(text)
 
 
 # Text-to-Speech functions, using Windows TTS
@@ -95,7 +99,6 @@ async def send_edge_text_to_voice(text):
         )
 
         temp_file = "./tts-temp.mp3"
-
         await communicate.save(temp_file)
 
         # Add effects to the audio file
@@ -121,7 +124,7 @@ async def send_edge_text_to_voice(text):
         # Optionally fall back to Windows TTS
         if TTS_TYPE != "WINDOWS":
             log("info", "Falling back to Windows TTS")
-            await send_local_text_to_voice(text)
+            send_local_text_to_voice(text)
 
 
 def add_audio_effects(audio):

@@ -1,10 +1,12 @@
+## components/memory_manager.py
+
 import json
 from collections import deque
 
 # Config.py
 from config import MEMORY_EVENTS
 
-event_memory = deque(maxlen=5000)
+event_memory = deque(maxlen=10000)
 
 
 def init_memory():
