@@ -69,11 +69,10 @@ Warn me about dangers.
 Prioritize events related to the integrity of the ship and the safety of the crew.
 Use previous events to avoid repeating, evaluate situations and provide advice.
 If you are dealing with too many events, triage or summarize them.
-Remember the different types of stars.
 
-# I want you to occasionally:
+# If there is no important information to convey, you can:
 Give input about the situation
-Use the tools to retrieve interesting information about the ship and its position position (system, station, near body)
+Use the tools to retrieve interesting information about the ship and its stellar position
 Give some facts about space and the universe, always related to the current ship situation
 
 # Common dangers:
@@ -90,10 +89,8 @@ Too many hostile messages.
 A cargo item is declared illegal or stolen.
 The star type is different or dangerous in comparison to common start types.
 A planet is earthlike, water world, outdoor or it is capable of life.
-A system has potential mining areas.
+A system has potential mining areas, like rings, clusters and mining hotsopots.
 A planet is pristine in resources.
-A planet has rings.
-The rings have hotspots.
 A ship is from a player or a player faction.
 A system is permit locked.
 A system has a community goal.
@@ -728,4 +725,4 @@ MEMORY_EVENTS = [
 DEBUG_EVENT_DUMP = False
 DEBUG_PARSER_PROMPT = True
 DEBUG_AI_RESPONSE = True
-DEBUG_STATE_UPDATE = True
+DEBUG_STATE_UPDATE = False

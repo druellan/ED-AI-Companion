@@ -23,8 +23,9 @@ def parse(entry):
 CONTEXT = """
 We targeted a ship for inspection.
 Try not to repeat identical scans. Check the previous events.
-Notify me if the ship has a big bounty.
-Notify me if the ship HullHealth is low.
-You can comment about the name of the ship or the pilot if you find them funny.
+Notify only if the ship has a big bounty (> 400000 CR).
+Notify only if the ship HullHealth is low.
+Notify only of the pilot is wanted and the rank is dangerous, deadly or elite.
+Crack a jake if the name of the pilot is funny.
 Ignore the event if there is nothing to report.
 """

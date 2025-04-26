@@ -8,16 +8,18 @@ from start import cleanup_event
 def parse(entry):
     j_message = entry.get("Message")
 
-    # Only read these messages type
+    # Messages to react on
     interpret_messages = [
         "$Trader_OnEnemyShipDetection",
         "$Miner_OnJumpNoAsteroids",
         "$STATION_docking_denied",
         "$DockingChatter",
+        #
         # Police
         "$Police_ArriveInvestigate",
         "$OverwatchCriticalDamage",
         # "$Military_Passthrough",
+        #
         # Pirate
         "$Pirate_Arrival",
         "$Pirate_HunterHostileSC",
@@ -41,7 +43,7 @@ def parse(entry):
 
 
 CONTEXT = """
-This meesage has been broadcasted on local space.
+This message has been broadcasted on local space.
 Don't read the message content, interpret the message based on "Message" (intention) and "Message_Localised" (content).
 Consider the previous message as context and to avoid repetition.
 Pay special attention to "$Pirate_ThreatenSpecific" messages.

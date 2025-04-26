@@ -49,8 +49,6 @@ def send_event_to_api(event_data):
         temperature=0.1,
     )
 
-    log("debug", completion)
-
     # Rough token estimation
     # Based on 4 chars per token (GPT uses slightly different rules but this is a rough estimate)
     system_prompt_length = round(len(get_system_prompt()) // 4)

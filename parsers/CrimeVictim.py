@@ -3,5 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
-The player has been the victim of a crime.
+We have been the victim of a crime.
 """
