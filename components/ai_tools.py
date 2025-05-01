@@ -36,13 +36,16 @@ def get_system(system_name):
         log("error", "System name is required for get_system.")
         return
 
-    params = {"systemName": system_name}
+    params = {
+        "systemName": system_name,
+        "showPermit": 1,
+        "showInformation": 1,
+    }
     try:
         response = requests.get(EDSM_API + "/api-v1/system", params=params)
-        response.raise_for_status()
         data = response.json()
-        formatted_data = json_to_compact_text(json.dumps(data))
-        return formatted_data
+        return data
+
     except requests.exceptions.RequestException as e:
         log("error", f"Error fetching data for {system_name}: {e}")
 
@@ -60,10 +63,9 @@ def get_system_bodies(system_name):
     params = {"systemName": system_name}
     try:
         response = requests.get(EDSM_API + "/api-system-v1/bodies", params=params)
-        response.raise_for_status()
         data = response.json()
-        formatted_data = json_to_compact_text(json.dumps(data))
-        return formatted_data
+        return data
+
     except requests.exceptions.RequestException as e:
         log("error", f"Error fetching bodies data for {system_name}: {e}")
 
@@ -81,10 +83,9 @@ def get_system_scan(system_name):
         response = requests.get(
             EDSM_API + "/api-system-v1/estimated-value", params=params
         )
-        response.raise_for_status()
         data = response.json()
-        formatted_data = json_to_compact_text(json.dumps(data))
-        return formatted_data
+        return data
+    
     except requests.exceptions.RequestException as e:
         log("error", f"Error fetching scan data for {system_name}: {e}")
 
@@ -101,10 +102,9 @@ def get_system_stations(system_name):
     params = {"systemName": system_name}
     try:
         response = requests.get(EDSM_API + "/api-system-v1/stations", params=params)
-        response.raise_for_status()
         data = response.json()
-        formatted_data = json_to_compact_text(json.dumps(data))
-        return formatted_data
+        return data
+    
     except requests.exceptions.RequestException as e:
         log("error", f"Error fetching station data for {system_name}: {e}")
 
@@ -124,10 +124,9 @@ def get_station_market(system_name):
         response = requests.get(
             EDSM_API + "/api-system-v1/stations/market", params=params
         )
-        response.raise_for_status()
         data = response.json()
-        formatted_data = json_to_compact_text(json.dumps(data))
-        return formatted_data
+        return data
+    
     except requests.exceptions.RequestException as e:
         log("error", f"Error fetching market data for {system_name}: {e}")
 
@@ -145,10 +144,9 @@ def get_system_factions(system_name):
     params = {"systemName": system_name}
     try:
         response = requests.get(EDSM_API + "/api-system-v1/factions", params=params)
-        response.raise_for_status()
         data = response.json()
-        formatted_data = json_to_compact_text(json.dumps(data))
-        return formatted_data
+        return data
+    
     except requests.exceptions.RequestException as e:
         log("error", f"Error fetching factions data for {system_name}: {e}")
 
@@ -156,14 +154,7 @@ def get_system_factions(system_name):
 
 
 def get_available_tools():
-    """
-    Automatically generates a list of available AI tools and their descriptions.
-    This function inspects the module for functions intended as tools.
-    Functions are considered tools if they are not private (don't start with '_')
-    and have a docstring which serves as the description.
-    """
-    tools_list = []
-    # Iterate through members of the current module
+    tools = []
     for name, obj in inspect.getmembers(sys.modules[__name__]):
         # Check if it's a function, not a built-in, not a private function,
         # and has a docstring (which we'll use as the description)
@@ -173,14 +164,32 @@ def get_available_tools():
             and not name.startswith("_")
             and obj.__doc__
         ):
-            # Format the description for the prompt
             description = obj.__doc__.strip()
-            # Get the function signature for the prompt
             signature = inspect.signature(obj)
-            # Format: function_name(parameters) - description
-            tools_list.append(f"- {name}{signature} - {description}")
 
-    return "\n".join(tools_list)
+            parameters = {}
+            for param in signature.parameters.values():
+                param_info = {
+                    "type": "string",
+                    "description": ""
+                }
+                parameters[param.name] = param_info
+
+            tool = {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": description,
+                    "parameters": {
+                        "type": "object",
+                        "properties": parameters,
+                        "required": list(parameters.keys()) if parameters else []
+                    }
+                }
+            }
+            tools.append(tool)
+
+    return json.dumps(tools, indent=2)
 
 
 # Example usage (for testing within ai_tools.py)

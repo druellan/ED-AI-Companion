@@ -1,13 +1,10 @@
 # ED:AI Companion by druellan
 
-import asyncio  # Import asyncio for running async functions
+import asyncio
 import json
 import os
-import re  # Import the regex module
-import sys  # Import the sys module
 import time
 
-from components import ai_tools  # Import the ai_tools module
 from components.ai_interface import check_openrouter_rate_limits, send_event_to_api
 from components.memory_manager import add_memory, init_memory
 from components.mission_manager import init_missions, update_missions
@@ -24,14 +21,12 @@ from components.utils import (
 # Config.py
 from config import (
     COMBAT_EVENTS,
-    DEBUG_AI_RESPONSE,
     DEBUG_EVENT_DUMP,
     DEBUG_PARSER_PROMPT,
     EXPLORATION_EVENTS,
     FLEET_CARRIER_EVENTS,
     JOURNAL_DIRECTORY,
     LLM_MODEL_NAME,
-    LLM_USE_TOOLS,
     ODYSSEY_EVENTS,
     OTHER_EVENTS,
     POWERPLAY_EVENTS,
@@ -163,19 +158,13 @@ async def process_event_batch(batch):
     if event_type in EVENT_LIST:
         log("event", f"Reacting to {event_type} events")
         response_text = send_event_to_api(final_string)
-        if response_text:
-            # Process tool calls first
-            if LLM_USE_TOOLS:
-                tool_output = process_tools(response_text, final_string)
-                if tool_output is not None:
-                    response_text = tool_output
 
-            # If no tool call was detected, proceed with speaking the response
-            if DEBUG_AI_RESPONSE:
-                if "NULL" in response_text:
-                    log("AI", "(AI dropped the response).")
-                    return
-                log("AI", f"{response_text}")
+        if response_text:
+            if "NULL" in response_text:
+                log("AI", "(AI dropped the response).")
+                return
+            
+            log("AI", f"{response_text}")
             await speak_response(response_text)
     else:
         log("event", f"Ignoring {event_type} events")
@@ -188,70 +177,6 @@ async def speak_response(response):
 
     await send_text_to_voice(response)
 
-
-# Process the AI's response to detect and execute tool calls
-def process_tools(response_text, event_string):
-    """
-    Inspects the AI response for tool calls and executes them.
-    Expected format: function_name('argument') or function_name()
-    """
-    tool_output = None
-    # Regex to find function calls like function_name() or function_name('...')
-    # It captures the function name and the content within single quotes (if any)
-    tool_call_pattern = re.compile(r"^\s*(\w+)\s*\(\s*(?:'(.*?)')?\s*\)\s*$")
-
-    for line in response_text.splitlines():
-        match = tool_call_pattern.match(line)
-        if match:
-            tool_name = match.group(1)
-            # The argument is in group 2, which can be None if no argument was provided
-            tool_arg = match.group(2)
-
-            log("info", f"Detected tool call: {tool_name} with argument: {tool_arg}")
-
-            tool_function = getattr(ai_tools, tool_name, None)
-
-            if tool_function and callable(tool_function):
-                try:
-                    if tool_arg is not None:
-                        tool_output = tool_function(tool_arg)
-                    else:
-                        tool_output = tool_function()
-
-                    # log("AI", f"Tool '{tool_name}' executed. Output: {tool_output}")
-                    # For now, we just return the first tool output found.
-                    # Future steps might involve processing multiple tool calls
-                    # or sending the output back to the AI.
-
-                    # let's recursively call the AI again, but this time we return the function response
-                    formatted_tool_output = json_to_compact_text(
-                        json.dumps(tool_output)
-                    )
-                    response_to_ai = f"""
-{event_string}
-
-# This was your response
-{response_text} 
-
-You invoked a function, this is the result:
-{formatted_tool_output}
-                    """
-                    # log("debug", response_to_ai)
-                    final_response = send_event_to_api(response_to_ai)
-                    return final_response
-
-                except Exception as e:
-                    log("error", f"Error executing tool '{tool_name}': {e}")
-                    continue
-            else:
-                log("error", f"Tool function '{tool_name}' not found or not callable.")
-                continue
-        else:
-            # Log lines that are not tool calls if needed for debugging
-            # log("debug", f"Line did not match tool pattern: {line}")
-            pass
-
-    return None
 
 
 if __name__ == "__main__":

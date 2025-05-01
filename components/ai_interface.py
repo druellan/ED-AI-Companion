@@ -5,6 +5,7 @@ import os
 import requests
 from openai import OpenAI
 
+from components import ai_tools
 from components.ai_tools import get_available_tools
 from components.memory_manager import get_recent_memory
 from components.mission_manager import get_missions
@@ -19,13 +20,15 @@ from config import (
     LLM_MAX_TOKENS_ALERT,
     LLM_MODEL_NAME,
     LLM_MODEL_NAMES,
+    LLM_USE_TOOLS,
     SYSTEM_PROMPT,
     USER_PROMPT,
+    DEBUG_AI_PROMPT_DUMP
 )
 
 
 # Send event data to the AI API
-def send_event_to_api(event_data):
+def send_event_to_api(event_data, tool_response=None):
     client = OpenAI(
         base_url=LLM_ENDPOINT,
         api_key=LLM_API_KEY,
@@ -36,18 +39,11 @@ def send_event_to_api(event_data):
         timeout=20.0,
     )
 
-    # Start the client and the model
-    completion = client.chat.completions.create(
-        model=LLM_MODEL_NAME,
-        extra_body={
-            "models": LLM_MODEL_NAMES,
-        },
-        messages=[
-            {"role": "system", "content": get_system_prompt()},
-            {"role": "user", "content": get_user_prompt(event_data)},
-        ],
-        temperature=0.1,
-    )
+    # Send the prompt to a file
+    if DEBUG_AI_PROMPT_DUMP:
+        with open("last_prompt.json", "w") as file:
+            last_prompt = get_system_prompt() + "\n\n" + get_user_prompt(event_data)
+            file.write(last_prompt)
 
     # Rough token estimation
     # Based on 4 chars per token (GPT uses slightly different rules but this is a rough estimate)
@@ -61,27 +57,89 @@ def send_event_to_api(event_data):
 
     log("AI", f"Estimated tokens: {estimated_tokens}")
 
-    # Send the messages variable to a file
-    with open("last_prompt.json", "w") as file:
-        last_prompt = get_system_prompt() + "\n\n" + get_user_prompt(event_data)
-        file.write(last_prompt)
+    # get the list of all tools available
+    if LLM_USE_TOOLS and not tool_response:
+        tool_list = json.loads(get_available_tools())
+    else:
+        tool_list = []
 
-    # Check if completion has an error
-    if hasattr(completion, "error") and completion.error:
-        error_code = completion.error.get("code", 500)
-        error_message = completion.error.get("message", "Unknown error")
+    # get ready the promps
+    messages = [
+        {"role": "system", "content": get_system_prompt()},
+        {"role": "user", "content": get_user_prompt(event_data)}
+    ]
+    
+    # Add tool response if it exists
+    if tool_response:
+        messages.append(tool_response)
 
-        # output("Response from AI API:")
-        # error_metadata = completion.error.get("metadata", "Unknown error")
-        # output(error_metadata)
-        return error_message + " code " + str(error_code)
+    # get the AI response
+    ai_response = client.chat.completions.create(
+        model=LLM_MODEL_NAME,
+        extra_body={
+            "models": LLM_MODEL_NAMES,
+        },
+        tools=tool_list,
+        messages=messages,
+        temperature=0.1,
+    )
 
-    # Check if completion has choices
-    if not completion.choices:
-        log("error", "No message from API, trying next LLM")
-        return error_message
+    if not ai_response or not ai_response.choices:
+        log("error", "No response or choices from API")
+        return "Error: No response from AI"
 
-    return completion.choices[0].message.content.strip()
+    ai_message = ai_response.choices[0].message
+
+    # Check if response has content
+    # if not ai_response or not ai_message.content:
+    #     log("error", "No message content from API")
+    #     return "Error: No response from AI"
+    
+    string_response = ai_message.content
+
+    # Check for tool calls if they exist
+    if hasattr(ai_message, 'tool_calls') and ai_message.tool_calls and LLM_USE_TOOLS:
+        if ai_message.tool_calls is not None:
+            tool_response = get_tool_response(ai_message)
+            if tool_response:
+                string_response = send_event_to_api(event_data, tool_response)
+
+    return string_response
+
+
+def get_tool_response(ai_message):
+    tool_call = ai_message.tool_calls[0]
+    tool_name = tool_call.function.name
+    tool_args = json.loads(tool_call.function.arguments)
+
+    tool_function = getattr(ai_tools, tool_name, None)
+
+    if tool_function and callable(tool_function):
+        log("AI", f"Calling Tool '{tool_name}'")
+        try:
+            if tool_args is not None:
+                tool_output = tool_function(**tool_args)  # Use unpacking to pass arguments correctly
+            else:
+                tool_output = tool_function()
+
+            # For now, we just return the first tool output found.
+            # Future steps might involve processing multiple tool calls
+            # or sending the output back to the AI.
+
+            # let's recursively call the AI again, but this time we return the function response
+            tool_result = json_to_compact_text(tool_output)  # Remove extra JSON encoding since output is already JSON
+
+            return {
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": tool_name,
+                "content": tool_result,
+            }
+        except Exception as e:
+            log("error", f"Error executing tool '{tool_name}': {e}")
+            return None
+        
+    return None
 
 
 # Get the main prompt and enrich it with the current status
@@ -104,7 +162,6 @@ def get_system_prompt():
         .replace("{recent_events}", json_to_compact_text(recent_events))
         .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
         .replace("{current_missions}", json_to_compact_text(missions))
-        .replace("{ai_tools_list}", get_available_tools())
     )
     # log("debug", system_prompt)
     return system_prompt
