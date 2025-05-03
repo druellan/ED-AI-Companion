@@ -14,6 +14,7 @@ from components.utils import json_to_compact_text, log
 
 # Config.py
 from config import (
+    DEBUG_AI_PROMPT_DUMP,
     JOURNAL_DIRECTORY,
     LLM_API_KEY,
     LLM_ENDPOINT,
@@ -23,7 +24,6 @@ from config import (
     LLM_USE_TOOLS,
     SYSTEM_PROMPT,
     USER_PROMPT,
-    DEBUG_AI_PROMPT_DUMP
 )
 
 
@@ -63,48 +63,66 @@ def send_event_to_api(event_data, tool_response=None):
     else:
         tool_list = []
 
-    # get ready the promps
+    # get ready the prompts
     messages = [
         {"role": "system", "content": get_system_prompt()},
-        {"role": "user", "content": get_user_prompt(event_data)}
+        {"role": "user", "content": get_user_prompt(event_data)},
     ]
-    
+
     # Add tool response if it exists
     if tool_response:
         messages.append(tool_response)
 
     # get the AI response
-    ai_response = client.chat.completions.create(
-        model=LLM_MODEL_NAME,
-        extra_body={
-            "models": LLM_MODEL_NAMES,
-        },
-        tools=tool_list,
-        messages=messages,
-        temperature=0.1,
-    )
+    try:
+        ai_response = client.chat.completions.create(
+            model=LLM_MODEL_NAME,
+            extra_body={
+                "models": LLM_MODEL_NAMES,
+            },
+            tools=tool_list,
+            messages=messages,
+            temperature=0.1,
+        )
 
-    if not ai_response or not ai_response.choices:
-        log("error", "No response or choices from API")
-        return "Error: No response from AI"
+        if hasattr(ai_response, "error"):
+            log("error", f"API Error: {ai_response.error}")
+            return "API Error"
 
-    ai_message = ai_response.choices[0].message
+        if not ai_response or not ai_response.choices:
+            log("error", "No response or choices from API")
+            return "Error: No response from AI"
 
-    # Check if response has content
-    # if not ai_response or not ai_message.content:
-    #     log("error", "No message content from API")
-    #     return "Error: No response from AI"
-    
-    string_response = ai_message.content
+        ai_message = ai_response.choices[0].message
 
-    # Check for tool calls if they exist
-    if hasattr(ai_message, 'tool_calls') and ai_message.tool_calls and LLM_USE_TOOLS:
-        if ai_message.tool_calls is not None:
-            tool_response = get_tool_response(ai_message)
-            if tool_response:
-                string_response = send_event_to_api(event_data, tool_response)
+        string_response = ai_message.content
 
-    return string_response
+        # Check for tool calls if they exist
+        if (
+            hasattr(ai_message, "tool_calls")
+            and ai_message.tool_calls
+            and LLM_USE_TOOLS
+        ):
+            if ai_message.tool_calls is not None:
+                tool_response = get_tool_response(ai_message)
+                if tool_response:
+                    string_response = send_event_to_api(event_data, tool_response)
+
+        return string_response
+
+    except Exception as e:
+        log("error", f"An API error occurred: {e}")
+        # Attempt to extract and print the JSON response if available
+        if hasattr(e, "response") and hasattr(e.response, "json"):
+            try:
+                error_json = e.response.json()
+                log(
+                    "error",
+                    f"API Error Response JSON: {json.dumps(error_json, indent=2)}",
+                )
+            except json.JSONDecodeError:
+                log("error", "Could not decode API error response as JSON.")
+        return "Error communicating with AI API"
 
 
 def get_tool_response(ai_message):
@@ -118,7 +136,9 @@ def get_tool_response(ai_message):
         log("AI", f"Calling Tool '{tool_name}'")
         try:
             if tool_args is not None:
-                tool_output = tool_function(**tool_args)  # Use unpacking to pass arguments correctly
+                tool_output = tool_function(
+                    **tool_args
+                )  # Use unpacking to pass arguments correctly
             else:
                 tool_output = tool_function()
 
@@ -127,7 +147,9 @@ def get_tool_response(ai_message):
             # or sending the output back to the AI.
 
             # let's recursively call the AI again, but this time we return the function response
-            tool_result = json_to_compact_text(tool_output)  # Remove extra JSON encoding since output is already JSON
+            tool_result = json_to_compact_text(
+                tool_output
+            )  # Remove extra JSON encoding since output is already JSON
 
             return {
                 "role": "tool",
@@ -138,7 +160,7 @@ def get_tool_response(ai_message):
         except Exception as e:
             log("error", f"Error executing tool '{tool_name}': {e}")
             return None
-        
+
     return None
 
 

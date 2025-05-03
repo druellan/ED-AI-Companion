@@ -1,5 +1,7 @@
+.vscode/*
 __pycache__
 .clinerules
+
 config.py
 ship-state.json
 last_prompt.json
