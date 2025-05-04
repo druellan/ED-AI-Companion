@@ -2,6 +2,7 @@
 
 import json
 import os
+
 from config import (
     JOURNAL_DIRECTORY,
 )
@@ -29,10 +30,9 @@ def parse(entry):
 
 CONTEXT = """
     We just traced a new navigation route.
-    The first entry is the current system. Ignore it.
+    The first entry is the current system.
     The last entry is the destination.
-    Tell me how many jumps I need to reach the destination.
-    Confirm if the route seems safe.
+    The rest are transition systems.
 """
 
 ## Example of the event ##

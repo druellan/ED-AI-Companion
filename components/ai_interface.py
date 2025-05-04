@@ -1,10 +1,13 @@
 # components/ai_interface.py
+import inspect  # Added import for inspect
 import json
 import os
+import re  # Added import for regex
 
 import requests
 from openai import OpenAI
 
+from components import ai_tools
 from components.ai_tools import get_available_tools
 from components.memory_manager import get_recent_memory
 from components.mission_manager import get_missions
@@ -13,19 +16,22 @@ from components.utils import json_to_compact_text, log
 
 # Config.py
 from config import (
+    DEBUG_AI_PROMPT_DUMP,
     JOURNAL_DIRECTORY,
     LLM_API_KEY,
     LLM_ENDPOINT,
     LLM_MAX_TOKENS_ALERT,
     LLM_MODEL_NAME,
     LLM_MODEL_NAMES,
+    LLM_USE_TOOLS,
     SYSTEM_PROMPT,
+    TOOLS_PROMPT,
     USER_PROMPT,
 )
 
 
 # Send event data to the AI API
-def send_event_to_api(event_data):
+def send_event_to_api(event_data, tool_response=None):
     client = OpenAI(
         base_url=LLM_ENDPOINT,
         api_key=LLM_API_KEY,
@@ -34,19 +40,6 @@ def send_event_to_api(event_data):
             "HTTP-Referer": "ED:AI Companion",
         },
         timeout=20.0,
-    )
-
-    # Start the client and the model
-    completion = client.chat.completions.create(
-        model=LLM_MODEL_NAME,
-        extra_body={
-            "models": LLM_MODEL_NAMES,
-        },
-        messages=[
-            {"role": "system", "content": get_system_prompt()},
-            {"role": "user", "content": get_user_prompt(event_data)},
-        ],
-        temperature=0.1,
     )
 
     # Rough token estimation
@@ -61,27 +54,141 @@ def send_event_to_api(event_data):
 
     log("AI", f"Estimated tokens: {estimated_tokens}")
 
-    # Send the messages variable to a file
-    with open("last_prompt.json", "w") as file:
-        last_prompt = get_system_prompt() + "\n\n" + get_user_prompt(event_data)
-        file.write(last_prompt)
+    # get ready the prompts
+    messages = [
+        {"role": "system", "content": get_system_prompt()},
+        {"role": "user", "content": get_user_prompt(event_data)},
+    ]
 
-    # Check if completion has an error
-    if hasattr(completion, "error") and completion.error:
-        error_code = completion.error.get("code", 500)
-        error_message = completion.error.get("message", "Unknown error")
+    # Add tool response if it exists (this will be used for the new tool calling mechanism)
+    if tool_response:
+        messages.append({"role": "tool", "content": tool_response})
 
-        # output("Response from AI API:")
-        # error_metadata = completion.error.get("metadata", "Unknown error")
-        # output(error_metadata)
-        return error_message + " code " + str(error_code)
+    # Send the prompt content to a plain text file
+    if DEBUG_AI_PROMPT_DUMP:
+        system_content = ""
+        user_content = ""
+        # Extract content based on role
+        for message in messages:
+            if message.get("role") == "system":
+                system_content = message.get("content", "")
+            elif message.get("role") == "user":
+                user_content = message.get("content", "")
 
-    # Check if completion has choices
-    if not completion.choices:
-        log("error", "No message from API, trying next LLM")
-        return error_message
+        with open("last_prompt.json", "w", encoding="utf-8") as file:
+            file.write("--- SYSTEM ---\n")
+            file.write(system_content)
+            file.write("\n\n--- USER ---\n")
+            file.write(user_content)
+            file.write("\n")
 
-    return completion.choices[0].message.content.strip()
+    # get the AI response
+    try:
+        ai_response = client.chat.completions.create(
+            model=LLM_MODEL_NAME,
+            extra_body={
+                "models": LLM_MODEL_NAMES,
+            },
+            messages=messages,
+            temperature=0.1,
+        )
+
+        if hasattr(ai_response, "error"):
+            log("error", f"API Error: {ai_response.error}")
+            return "API Error"
+
+        if not ai_response or not ai_response.choices:
+            log("error", "No response or choices from API")
+            return "Error: No response from AI"
+
+        ai_message_content = ai_response.choices[0].message.content
+
+        # Process the AI response for tool calls
+        if LLM_USE_TOOLS:
+            tool_output = get_tool_response(ai_message_content)
+
+        if tool_output:
+            # If a tool was called and returned output, send it back to the AI
+            log("debug", tool_output)
+            return send_event_to_api(event_data, json_to_compact_text(tool_output))
+        else:
+            # Otherwise, return the AI's original message content
+            return ai_message_content
+
+    except Exception as e:
+        log("error", f"An API error occurred: {e}")
+        # Attempt to extract and print the JSON response if available
+        if hasattr(e, "response") and hasattr(e.response, "json"):
+            try:
+                error_json = e.response.json()
+                log(
+                    "error",
+                    f"API Error Response JSON: {json.dumps(error_json, indent=2)}",
+                )
+            except json.JSONDecodeError:
+                log("error", "Could not decode API error response as JSON.")
+        return "Error communicating with AI API"
+
+
+def get_tool_response(ai_message_content):
+    pattern = r"^(\w+)\((.*)\)$"
+    tool_output = None
+
+    # Use re.finditer with the re.MULTILINE flag
+    # This finds all matches, but we'll process only the first valid one.
+    iterator = re.finditer(pattern, ai_message_content.strip(), re.MULTILINE)
+
+    for match in iterator:
+        # Process the first match found
+        tool_name = match.group(1)
+        tool_param_string = match.group(2).strip()
+        matched_line = match.group(0)  # The full line that matched
+
+        tool_function = getattr(ai_tools, tool_name, None)
+
+        if tool_function and callable(tool_function):
+            log(
+                "AI",
+                f"Attempting to call Tool '{tool_name}' with parameter '{tool_param_string}'",
+            )
+            try:
+                if tool_param_string:
+                    cleaned_param = tool_param_string.strip().strip("'\"")
+                    tool_output = tool_function(cleaned_param)
+                else:
+                    # Call function without arguments if param string is empty
+                    tool_output = tool_function()
+
+                log(
+                    "AI",
+                    f"Successfully called Tool '{tool_name}' returning '{tool_output}'.",
+                )
+                return tool_output
+
+            except TypeError as e:
+                log(
+                    "error",
+                    f"Error calling tool '{tool_name}' with parameter '{tool_param_string}' from line '{matched_line}': Incorrect arguments. {e}",
+                )
+                # Stop processing after the first attempt, even if it fails
+                return None
+            except Exception as e:
+                log(
+                    "error",
+                    f"Error executing tool '{tool_name}' with parameter '{tool_param_string}' from line '{matched_line}': {e}",
+                )
+                # Stop processing after the first attempt, even if it fails
+                return None
+        else:
+            log(
+                "AI",
+                f"Tool '{tool_name}' found in '{matched_line}' but is not found or not callable in ai_tools.",
+            )
+            # Stop processing as we only care about the first potential tool call line
+            return None
+
+    # Return None if the iterator had no matches or the first match wasn't a valid/executable tool
+    return None
 
 
 # Get the main prompt and enrich it with the current status
@@ -104,8 +211,12 @@ def get_system_prompt():
         .replace("{recent_events}", json_to_compact_text(recent_events))
         .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
         .replace("{current_missions}", json_to_compact_text(missions))
-        .replace("{ai_tools_list}", get_available_tools())
     )
+
+    if LLM_USE_TOOLS:
+        system_prompt.join(TOOLS_PROMPT)
+        system_prompt.join(get_available_tools())
+
     # log("debug", system_prompt)
     return system_prompt
 

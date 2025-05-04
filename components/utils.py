@@ -85,7 +85,7 @@ def log(type_str, message):
     superscript = timestamp.translate(SUPERSCRIPT)
 
     label_text = config["label"]
-    padded_text = label_text.center(7)
+    padded_text = label_text.ljust(6)
     boxed_label = f"❬{padded_text}❭"
 
     print(

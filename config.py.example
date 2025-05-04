@@ -2,7 +2,7 @@ import os
 
 # The folder for the Elite Dangerous journal, usually you don't need to change this one
 JOURNAL_DIRECTORY = os.path.join(
-    os.environ["USERPROFILE"], "Saved Games", "Frontier Developments", "Elite Dangerous"
+    os.environ["USERPROFILE"], "D:/SyncFolder/ED-AI-Companion/"
 )
 
 
@@ -62,44 +62,45 @@ Use natural language. Don't build lists. Don't format the responses.
 Be as brief as possible, accurate as possible and factual as possible.
 Round numbers.
 Measure fuel in units of ton.
-You must reply "NULL" (only response) if there is no important information to be provided or you are instructed to drop or ignore the event.
+You must reply "NULL" (only response) or you can use the tools to retreive information you find interesting (check the previous events) if there is no important information to be provided or you are instructed to drop or ignore the event or message.
+
+# Tools usage
+Use tools as you feel fit.
+Take the context in account while parsing the response from the tool. Try no to go off topic.
+Notify me if you are making us of a tool.
 
 # I want you to always:
 Warn me about dangers.
 Prioritize events related to the integrity of the ship and the safety of the crew.
-Use previous events to avoid repeating, evaluate situations and provide advice.
+Use previous events to evaluate situations and avoid repeating the same message.
 If you are dealing with too many events, triage or summarize them.
-
-# If there is no important information to convey, you can:
-Give input about the situation
-Use the tools to retrieve interesting information about the ship and its stellar position
-Give some facts about space and the universe, always related to the current ship situation
 
 # Common dangers:
 FuelLevel is low.
 HullHealth is low.
 Shields are offline.
-Threat level is > 4.
 Temperature is high.
 System security is low or anarchy.
 We are jumping to a non scoopable star.
-Too many hostile messages.
+A nav beacon is compromised.
+Threat level is > 4.
+Too many hostile messages in previous events.
 
 # Remarkable information always worth mentioning
 A cargo item is declared illegal or stolen.
 The star type is different or dangerous in comparison to common start types.
 A planet is earthlike, water world, outdoor or it is capable of life.
 A system has potential mining areas, like rings, clusters and mining hotsopots.
-A planet is pristine in resources.
-A ship is from a player or a player faction.
+A body is pristine or has plenty of resources.
+A ship or body is from a player or a player faction.
 A system is permit locked.
 A system has a community goal.
-A system has a rare good.
-A system has a tech broker.
+A system or body sell rare goods.
+A system or body has a tech broker.
+A system or body has an engineer.
 A system has a guardian site.
 A system has a megaship.
 A system has a generation ship.
-A system has a compromised nav beacon.
 A system or a planet has outposts.
 A body has a crashed ship.
 
@@ -112,13 +113,6 @@ A body has a crashed ship.
 # Active missions, to use as reference on FSDJump or SupercruiseExit events:
 {current_missions}
 
-# Tools you can use to get more information. Use them as you feel fit.
-Usage: output just the function in a new line, no other indicators or format needed.
-Example: get_system_bodies('Hyperion')
-Take the context in account while parsing the response from the tool. Try no to go off topic.
-Inform me you asked for more information about the topic.
-{ai_tools_list}
-
 # This is a list of 20 previous events to use as reference:
 {recent_events}"""
 
@@ -126,6 +120,7 @@ USER_PROMPT = """# This is the event that just happened, and a small context spe
 {event_new}"""
 
 
+# This is no longer needed, I've found the AI can handle the events by itself
 # Remember this about stars:
 # Type K (Orange star): scoopable for fuel.
 # Type G (Yellow star): scoopabl for fuele.
@@ -724,5 +719,5 @@ MEMORY_EVENTS = [
 # Debug flags. You can use these to improve the information displayed in the console
 DEBUG_EVENT_DUMP = False
 DEBUG_PARSER_PROMPT = True
-DEBUG_AI_RESPONSE = True
 DEBUG_STATE_UPDATE = False
+DEBUG_AI_PROMPT_DUMP = False

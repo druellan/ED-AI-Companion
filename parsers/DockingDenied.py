@@ -1,5 +1,3 @@
-# We only ptovide information for reasons other than distance
-
 from start import cleanup_event
 
 
@@ -11,7 +9,7 @@ def parse(entry):
 
 CONTEXT = """
 The station is refusing to let us dock.
-Only inform about reasons other than distance.
+Notify if the station is refusing docking for other reasons than distance.
 """
 
 ## {'event': 'DockingDenied', 'Reason': 'RestrictedAccess', 'MarketID': 3701565440, 'StationName': 'H3G-93T', 'StationType': 'FleetCarrier'}

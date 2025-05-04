@@ -3,6 +3,7 @@
 # Cruise ship messages can be useful to pirates, but I need to find a way to avoid repetition.
 
 from start import cleanup_event
+from components.utils import log
 
 
 def parse(entry):
@@ -30,13 +31,14 @@ def parse(entry):
         "$Pirate_OnDeclarePiracyAttack",
         # "$Pirate_ReminderValue",
         # "$Pirate_ReminderSpecific",
+        "$Pirate_StartInterdiction",
         "$BadKarmaCriticalDamage",
         "$Indirect_EnemyReinforcements",
         "$Combat_OnKillReward",
     ]
 
     if not any(j_message.startswith(msg) for msg in interpret_messages):
-        print(f"Ignoring the message type {j_message}")
+        log("event", f"Dropping no relevant message type: {j_message}")
         return False
 
     return cleanup_event(entry, ["Channel", "From"])

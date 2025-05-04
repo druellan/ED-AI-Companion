@@ -2,6 +2,7 @@
 
 import json
 import os
+
 from config import (
     JOURNAL_DIRECTORY,
 )
@@ -27,7 +28,7 @@ CONTEXT = """
 We undocked from a space port.
 Just mention the cargo, don't mention the total or the units for each cargo.
 Notify me if I have less than 10 limpets, ignore otherwise.
-Check for cargo flagged as stolen or ilegal, ignore otherwise.
+Check for cargo flagged as stolen or illegal.
 Notify me about the fuel levels.
 """
 

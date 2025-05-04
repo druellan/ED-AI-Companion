@@ -1,41 +1,10 @@
-import requests
-
-from config import EDSM_API
-from start import cleanup_event
-
-
 def parse(entry):
-    star_system = entry.get("StarSystem")
-    params = {"systemName": star_system}
-
-    if entry["BodyType"] == "Station":
-        response = requests.get(EDSM_API + "/api-system-v1/stations", params=params)
-        data = response.json()
-        for station in data["stations"]:
-            if entry["Body"] == station["name"]:
-                event = {
-                    "type": station["type"],
-                    "name": station["name"],
-                    "economy": station["economy"],
-                    "secondEconomy": station["secondEconomy"],
-                    "haveMarket": station["haveMarket"],
-                    "haveShipyard": station["haveShipyard"],
-                    "haveOutfitting": station["haveOutfitting"],
-                    "otherServices": station["otherServices"],
-                }
-                return event
-
-    entry = cleanup_event(entry, ["Taxi", "Multicrew", "StarSystem", "SystemAddress"])
     return entry
 
 
 CONTEXT = """
-    We have exited supercruise.
-    If the near body is a star, ignore this event.
-    If the near body is a station: notify me if my ship can't dock at the station due to the size.
-    If the near body is a station: notify me if the cargo I have might be illegal.
-    Summarize any other information you might find relevant based on my status.
-    Check the previous SupercruiseDestinationDrop event to asset the threat level.
+    We reached our supercruise destination.
+    Only notify in the threat levels are high.    
 """
 # {'event': 'SupercruiseExit', 'Taxi': False, 'Multicrew': False, 'StarSystem': 'Morten-Marte', 'SystemAddress': 2008132129498, 'Body': 'James Sneddon', 'BodyID': 4, 'BodyType': 'Station'}
 # {'event': 'SupercruiseExit', 'Body': 'ER 8 6', 'BodyID': 54, 'BodyType': 'Planet'}

@@ -5,15 +5,14 @@
 
 import json
 import os
-from config import (
-    JOURNAL_DIRECTORY,
-)
+
+from config import JOURNAL_DIRECTORY
 
 
 def parse(entry):
     market_store = os.path.join(JOURNAL_DIRECTORY, "Market.json")
 
-    products_to_report = 6
+    products_to_report = 3
 
     try:
         with open(market_store, "r") as file:
@@ -134,8 +133,7 @@ Give me your impression about the market based on an average profit of the marke
 Report the top opportunities to buy and sell, but only the ones with high profit, if any.
 Tell me if we have any cargo we can sell for a positive profit. Ignore otherwise.
 Tell me if there are any rare goods available, don't mention it if there are none.
-Don't mention the actual profit value.
-"""
+Don't mention the actual profit value."""
 
 ## Event Example ##
 ## { "timestamp":"2025-02-02T14:33:38Z", "event":"Market", "MarketID":128103160, "StationName":"James Sneddon", "StationType":"Orbis", "StarSystem":"Morten-Marte" }
