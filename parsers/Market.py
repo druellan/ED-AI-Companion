@@ -131,9 +131,10 @@ We are looking at the buy/sell market.
 We consider a high profit, profit values > 500. We consider a bad profit any negative profit value.
 Give me your impression about the market based on an average profit of the market.
 Report the top opportunities to buy and sell, but only the ones with high profit, if any.
-Tell me if we have any cargo we can sell for a positive profit. Ignore otherwise.
-Tell me if there are any rare goods available, don't mention it if there are none.
-Don't mention the actual profit value."""
+Tell me if we have any cargo we can sell for a positive profit.
+Tell me if there are any rare goods available.
+Don't mention the actual profit value.
+"""
 
 ## Event Example ##
 ## { "timestamp":"2025-02-02T14:33:38Z", "event":"Market", "MarketID":128103160, "StationName":"James Sneddon", "StationType":"Orbis", "StarSystem":"Morten-Marte" }

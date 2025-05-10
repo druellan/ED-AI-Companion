@@ -47,6 +47,7 @@ CONTEXT = """
 We just scanned a new body or a nav beacon in the system.
 On ScanType=NavBeaconDetail, be brief and provide only the most remarkable information.
 On ScanType=Detailed, inform about the body characteristics.
+If ScanType=AutoScan and previous event=FSDJump this is our first time in the system.
 """
 
 # { "timestamp":"2025-04-06T23:23:55Z", "event":"Scan", "ScanType":"Detailed", "BodyName":"HR 7451 7", "BodyID":11, "Parents":[ {"Null":10}, {"Star":0} ], "StarSystem":"HR 7451", "SystemAddress":457137195371, "DistanceFromArrivalLS":816.738617, "TidalLock":false, "TerraformState":"Terraformable", "PlanetClass":"Water world", "Atmosphere":"thin carbon dioxide rich atmosphere", "AtmosphereType":"CarbonDioxideRich", "AtmosphereComposition":[ { "Name":"Oxygen", "Percent":84.519302 }, { "Name":"CarbonDioxide", "Percent":14.637609 }, { "Name":"Water", "Percent":0.558797 } ], "Volcanism":"", "MassEM":0.191448, "Radius":3655856.750000, "SurfaceGravity":5.709294, "SurfaceTemperature":299.815765, "SurfacePressure":6578.182129, "Landable":false, "Composition":{ "Ice":0.000000, "Rock":0.668206, "Metal":0.331794 }, "SemiMajorAxis":230256849.527359, "Eccentricity":0.175361, "OrbitalInclination":7.484907, "Periapsis":227.938658, "OrbitalPeriod":6804993.569851, "AscendingNode":-13.909328, "MeanAnomaly":10.766737, "RotationPeriod":6939100.313914, "AxialTilt":0.344175, "WasDiscovered":false, "WasMapped":true }

@@ -2,7 +2,7 @@ import os
 
 # The folder for the Elite Dangerous journal, usually you don't need to change this one
 JOURNAL_DIRECTORY = os.path.join(
-    os.environ["USERPROFILE"], "D:/SyncFolder/ED-AI-Companion/"
+    os.environ["USERPROFILE"], "Saved Games", "Frontier Developments", "Elite Dangerous"
 )
 
 
@@ -12,9 +12,9 @@ LLM_API_KEY = (
     ""
 )
 # The primary model to use, and a list of models to use if the primary model fails
-LLM_MODEL_NAME = "google/gemini-2.0-flash-exp:free"
+LLM_MODEL_NAME = "mistralai/mistral-small-24b-instruct-2501:free"
 LLM_MODEL_NAMES = [
-    "mistralai/mistral-small-24b-instruct-2501:free",
+    "google/gemini-2.0-flash-exp:free",
 ]
 LLM_MAX_TOKENS_ALERT = 32000
 
@@ -60,65 +60,70 @@ Always talk to me directly as Commander.
 Use information and facts that are related to the game Elite Dangerous and the in-game universe.
 Use natural language. Don't build lists. Don't format the responses.
 Be as brief as possible, accurate as possible and factual as possible.
+Triage or summarize multiple events if necessary.
 Round numbers.
 Measure fuel in units of ton.
-You must reply "NULL" (only response) or you can use the tools to retreive information you find interesting (check the previous events) if there is no important information to be provided or you are instructed to drop or ignore the event or message.
+Avoid repeating messages.
+You can reply "NULL" (only response) if nothing in the context triggers a response or you are instructed to remain silent.
 
-# Tools usage
-Use tools as you feel fit.
-Take the context in account while parsing the response from the tool. Try no to go off topic.
-Notify me if you are making us of a tool.
-
-# I want you to always:
-Warn me about dangers.
-Prioritize events related to the integrity of the ship and the safety of the crew.
-Use previous events to evaluate situations and avoid repeating the same message.
-If you are dealing with too many events, triage or summarize them.
+# Priorities, from critical to anecdotal:
+- Events related to immediate danger to the ship and the safety of the crew.
+- Events that can relate to danger in the future.
+- Events that change or can change the legal status of the ship.
+- Events that can compromise the cargo.
+- Events related to navigation.
+- Events that can produce economical gain.
+- Events that can produce exploration points.
+- Facts that can be helpful in the future.
+- Facts that can be of interest.
 
 # Common dangers:
-FuelLevel is low.
-HullHealth is low.
-Shields are offline.
-Temperature is high.
+Ship fuelLevel < 10 tons.
+Ship hullHealth < 50%.
+Ship shields are offline.
+Ship temperature > 100.
 System security is low or anarchy.
 We are jumping to a non scoopable star.
 A nav beacon is compromised.
 Threat level is > 4.
 Too many hostile messages in previous events.
 
-# Remarkable information always worth mentioning
-A cargo item is declared illegal or stolen.
-The star type is different or dangerous in comparison to common start types.
-A planet is earthlike, water world, outdoor or it is capable of life.
-A system has potential mining areas, like rings, clusters and mining hotsopots.
-A body is pristine or has plenty of resources.
-A ship or body is from a player or a player faction.
-A system is permit locked.
-A system has a community goal.
-A system or body sell rare goods.
-A system or body has a tech broker.
-A system or body has an engineer.
-A system has a guardian site.
-A system has a megaship.
-A system has a generation ship.
-A system or a planet has outposts.
-A body has a crashed ship.
-
-# Current ship status, to use as reference:
+# Current ship status:
 {current_status}
 
-# Ship cargo, to use as reference:
+# Ship cargo:
 {current_cargo}
 
-# Active missions, to use as reference on FSDJump or SupercruiseExit events:
+# Active missions:
 {current_missions}
 
-# This is a list of 20 previous events to use as reference:
+# This is a list of 20 previous events:
 {recent_events}"""
 
-USER_PROMPT = """# This is the event that just happened, and a small context specific to the event:
-{event_new}"""
+TOOLS_PROMPT = """
+# Tools usage
+Usage: output just the function name and the parameter in a new line, no other indicators or format are needed.
+Example: get_system_stations("Hyperion")
+Use tools as you feel fit.
+Take the context in account while parsing the response from the tool. Don't go off topic.
+"""
 
+USER_PROMPT = """
+# Remarkable information and facts:
+Potential mining areas, like rings, clusters and mining hotsopots.
+A cargo item is declared illegal or stolen.
+Pristine or plenty of resources.
+A guardian site.
+A megaship.
+A generation ship.
+A player or a player faction.
+A tech broker.
+An engineer.
+Rare goods.
+
+# This is the event that just happened, and a small context specific to the event:
+{event_new}
+"""
 
 # This is no longer needed, I've found the AI can handle the events by itself
 # Remember this about stars:
@@ -720,4 +725,4 @@ MEMORY_EVENTS = [
 DEBUG_EVENT_DUMP = False
 DEBUG_PARSER_PROMPT = True
 DEBUG_STATE_UPDATE = False
-DEBUG_AI_PROMPT_DUMP = False
+DEBUG_AI_PROMPT_DUMP = True

@@ -91,7 +91,7 @@ async def process_journal_entries(lines):
         event_type = entry.get("event")
 
         # Skip filtered events
-        if event_type in ["Fileheader", "Shutdown", "Music"]:
+        if event_type in ["Fileheader", "Shutdown", "Music", "ShipLocker"]:
             continue
 
         if DEBUG_EVENT_DUMP:

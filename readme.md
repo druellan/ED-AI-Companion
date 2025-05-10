@@ -1,14 +1,16 @@
-
 # ED:AI Companion
 A collection of Python scripts to monitor the Elite Dangerous journal files and provide audio feedback using *OpenRouter* services.
 
-*This script is a work in progress, primarily for personal use, as a learning experience and to have fun with LLMs and ED. For something more complete and polished, I recommend checking out the [COVAS:NEXT project](https://github.com/RatherRude/Elite-Dangerous-AI-Integration).*
+*This script is a work in progress, primarily for personal use, as a learning experience, and to have fun with LLMs and ED. For something more complete and polished, I recommend checking out the [COVAS:NEXT project](https://github.com/RatherRude/Elite-Dangerous-AI-Integration).*
 
-The idea is to provide audio feedback for the most common events in the game, such as jumps, combat, docking, etc., while using the small and free LLMs from *OpenRouter*, that are usually limited in prompt size.
+### Goal
+The idea is to provide audio feedback for the most common events in the game, such as jumps, combat, docking, etc., while using the small and *free* LLMs from *OpenRouter*. Unlike COVAS:NEXT, this project does not provide interactivity with the AI, and the intention is to have an intelligence that can provide really useful information to the player without any input.
 
-Since each event can have a personalized parser, post-processing and web content, such as *EDSM* data, can be injected before triggering the AI response. This also helps to reduce the size of the prompt.
-
-I'm also keeping a memory file for the ship state `ship-state.json` (fuel levels, last place visited, etc), for missions `missions_memory.json` and past events `event_memory.json`, all of it is injected in the system prompt.
+### Features
+* Each event can have a personalized parser that can be used to  preprocess and enrich the information with web content and third-party APIs.
+* Grouping of consecutive similar events to send them in bulk to the AI.
+* The AI can make use of tools; we are injecting them directly in the system prompt to bypass the restrictions free LLMs usually have, so results can vary.
+* I'm also keeping a memory file for the ship state `ship-state.json` (fuel levels, last place visited, etc), for missions `missions_memory.json` and past events `event_memory.json`, all of it is injected in the system prompt.
 
 ### Demo Videos
 [Reacting to undock, new destination, radio chatter and system arrival](https://vimeo.com/1074661030) (Edge TTS without audio filters)
@@ -24,6 +26,9 @@ You might need Python 3.x installed in the system.
 
 You want to create your own parsers? Just create a new file in the `/parsers` directory using the exact name of the event you want to parse. I recommend copying another parser that provides a similar functionality to use as a template. 
 Do you want to use Cortana/Eva voice on Windows? Use the registry patch file included: `Microsoft-Eva-Mobile.reg` to make that voice available.
+
+### About the config file
+I'm changing the configurations a LOT, so new versions of the project might require update the config.py file.
 
 ### Inspired by the work of:
 - RatherRude - [Elite Dangerous AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration)

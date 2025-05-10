@@ -3,7 +3,7 @@ def parse(entry):
 
 
 CONTEXT = """
-My ship is being transferred to the current location.
+A ship (ShipType_Localised) is being transferred to the current location.
 Mention the original ship location (system) and the time it will take to transfer (TransferTime) in minutes.
 """
 
