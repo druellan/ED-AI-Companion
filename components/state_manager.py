@@ -115,8 +115,6 @@ def filter_state_events(entry):
         if "FuelMain" in current_state:
             filtered["FuelMain"] = current_state["FuelCapacity"]
 
-    log("debug", filtered)
-
     return filtered
 
 
