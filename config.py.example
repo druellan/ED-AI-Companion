@@ -12,7 +12,7 @@ LLM_API_KEY = (
     ""
 )
 # The primary model to use, and a list of models to use if the primary model fails
-LLM_MODEL_NAME = "mistralai/mistral-small-24b-instruct-2501:free"
+LLM_MODEL_NAME = "mistralai/mistral-small-3.1-24b-instruct:free"
 LLM_MODEL_NAMES = [
     "google/gemini-2.0-flash-exp:free",
 ]
@@ -61,14 +61,16 @@ Use information and facts that are related to the game Elite Dangerous and the i
 Use natural language. Don't build lists. Don't format the responses.
 Be as brief as possible, accurate as possible and factual as possible.
 Triage or summarize multiple events if necessary.
+Try to pronounce acronyms without the symbols inside them.
 Round numbers.
 Measure fuel in units of ton.
 Avoid repeating messages.
-You can reply "NULL" (only response) if nothing in the context triggers a response or you are instructed to remain silent.
+You can reply "NULL" (only response) if nothing in the context worth a response or you are instructed to remain silent.
 
 # Priorities, from critical to anecdotal:
 - Events related to immediate danger to the ship and the safety of the crew.
 - Events that can relate to danger in the future.
+- Events related to human players, like messages and invites.
 - Events that change or can change the legal status of the ship.
 - Events that can compromise the cargo.
 - Events related to navigation.
@@ -88,37 +90,38 @@ A nav beacon is compromised.
 Threat level is > 4.
 Too many hostile messages in previous events.
 
-# Current ship status:
+# Current ship status, to use as context:
 {current_status}
 
-# Ship cargo:
+# Ship cargo, to use as context:
 {current_cargo}
 
-# Active missions:
+# Active missions, to use as context:
 {current_missions}
 
-# This is a list of 20 previous events:
-{recent_events}"""
+# This is a list of 20 previous events, to use as context:
+{recent_events}
+"""
 
 TOOLS_PROMPT = """
 # Tools usage
-Usage: output just the function name and the parameter in a new line, no other indicators or format are needed.
+Usage: output just the function name and the parameter in a new line, no other indicators or formatting is needed.
 Example: get_system_stations("Hyperion")
 Use tools as you feel fit.
 Take the context in account while parsing the response from the tool. Don't go off topic.
 """
 
 USER_PROMPT = """
-# Remarkable information and facts:
-Potential mining areas, like rings, clusters and mining hotsopots.
+# Information I find remarkable and worth mentioning:
 A cargo item is declared illegal or stolen.
 Pristine or plenty of resources.
-A guardian site.
-A megaship.
-A generation ship.
+Great buy opportunities.
+A guardian site in the system.
+A megaship in the system.
+A generation ship in the system.
 A player or a player faction.
-A tech broker.
-An engineer.
+A tech broker in the system or station.
+An engineer in the system or station.
 Rare goods.
 
 # This is the event that just happened, and a small context specific to the event:
@@ -184,7 +187,7 @@ TRAVEL_EVENTS = {
     "FSDTarget": True,
     "LeaveBody": True,
     "Liftoff": True,
-    "StartJump": True,
+    "StartJump": False,
     "SupercruiseEntry": False,
     "SupercruiseExit": True,
     "Touchdown": True,

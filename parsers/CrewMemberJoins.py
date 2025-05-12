@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+    A new crew member joined our ship.
 """

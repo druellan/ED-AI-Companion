@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+We were promoted within our squadron.
 """

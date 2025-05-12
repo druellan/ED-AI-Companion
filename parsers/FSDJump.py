@@ -25,7 +25,7 @@ def parse(entry):
 CONTEXT = """
 Our ship just arrived to another system.
 Provide a summary of the system.
-If the system has no planets, no human presence, declare the system barren and ignore the rest.
+If the system has no planets and no human presence, declare the system barren and ignore the rest.
 Describe the system allegiance.
 Describe the system faction and system faction state. Note if I have reputation with the faction (bad, average, good, excellent).
 Note if the happiness is low, otherwise, ignore this fact.

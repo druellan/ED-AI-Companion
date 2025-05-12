@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+We defected from one Powerplay allegiance to another.
 """

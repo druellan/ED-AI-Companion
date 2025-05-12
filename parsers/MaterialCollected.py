@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+We collected a raw material, manufactured component, or encoded data.
 """

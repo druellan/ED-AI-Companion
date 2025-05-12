@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+    Our crew member launched a ship-launched fighter.
 """

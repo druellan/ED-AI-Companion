@@ -62,4 +62,6 @@ def init_missions():
             missions_data = json.load(file)
             missions_memory.extend(missions_data)
     except FileNotFoundError:
-        pass
+        # If the file doesn't exist, create it with an empty list
+        with open("missions_memory.json", "w") as file:
+            json.dump([], file)

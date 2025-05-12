@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+We were kicked from our squadron.
 """

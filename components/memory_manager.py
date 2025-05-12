@@ -6,7 +6,7 @@ from collections import deque
 # Config.py
 from config import MEMORY_EVENTS
 
-event_memory = deque(maxlen=10000)
+event_memory = deque(maxlen=20000)
 
 
 def init_memory():

@@ -10,4 +10,5 @@ def parse(entry):
 
 
 CONTEXT = """
+Our ship's loadout information was updated, or we switched ships.
 """

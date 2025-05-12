@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+We are approaching a celestial body.
 """

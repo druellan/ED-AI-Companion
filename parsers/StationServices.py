@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+We accessed the station services menu.
 """

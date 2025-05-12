@@ -34,7 +34,7 @@ CONTEXT = """
     If the near body is a star, ignore this event.
     If the near body is a station: notify me if my ship can't dock at the station due to the size.
     If the near body is a station: notify me if the cargo I have might be illegal.
-    Summarize any other information you might find relevant based on my status.
+    Summarize any other information you might find relevant based on my status, ignore the information you think is not relevant.
     Check the previous SupercruiseDestinationDrop event to asset the threat level.
 """
 # {'event': 'SupercruiseExit', 'Taxi': False, 'Multicrew': False, 'StarSystem': 'Morten-Marte', 'SystemAddress': 2008132129498, 'Body': 'James Sneddon', 'BodyID': 4, 'BodyType': 'Station'}

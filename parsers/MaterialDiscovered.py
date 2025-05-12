@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+We discovered a new material for the first time.
 """

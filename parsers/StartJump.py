@@ -13,8 +13,7 @@ def parse(entry):
 
 CONTEXT = """
     We are jumping to another system.
-    Remind me if the ship fuel is low.
-    Reming my if the star can be dangerous or non-scoopable.
+    It is important to check the remaining fuel.
 """
 
 # { "timestamp":"2025-02-17T01:19:15Z", "event":"StartJump", "JumpType":"Hyperspace", "Taxi":false, "StarSystem":"Gurughna", "SystemAddress":3382588773082, "StarClass":"K" }

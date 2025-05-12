@@ -36,7 +36,7 @@ def parse(entry):
 
 CONTEXT = """
     We are targeting our next FSD destination.
-    If RemainingJumpsInRoute > 1 the target is a transition system to our destination, otherwise, it is the final destination.
+    If RemainingJumpsInRoute > 1 the target is a transition and the immediate jump towards our destination, otherwise, it is the final destination system.
 """
 
 ## Example of the event ##

@@ -3,5 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
-Received a wing invitation.
+We received an invitation from another player.
 """

@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+We have lifted off from a planet surface.
 """

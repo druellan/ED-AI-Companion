@@ -23,7 +23,7 @@ def init_state():
             entry = json.loads(line)
             filtered_entry = filter_state_events(entry)
             if filtered_entry:
-                update_state(filtered_entry)
+                add_states(filtered_entry)
 
 
 # Gather information from the ingame status and save it to the ship-state.json file
@@ -88,9 +88,15 @@ def filter_state_events(entry):
         }
     if entry.get("event") == "Loadout":
         filtered = {
+            "Ship": entry.get("Ship"),
+            "ShipName": entry.get("ShipName"),
             "HullHealth": entry.get("HullHealth"),
         }
-
+    if entry.get("event") == "ShipyardSwap":
+        filtered = {
+            "Ship": entry.get("ShipType"),
+            "ShipName": "",
+        }
     if entry.get("event") == "Fuel":
         filtered["FuelLevel"] = entry["Fuel"].get("FuelMain")
         filtered["FuelReservoir"] = entry["Fuel"].get("FuelReservoir")
@@ -108,6 +114,8 @@ def filter_state_events(entry):
         current_state = get_state_all()
         if "FuelMain" in current_state:
             filtered["FuelMain"] = current_state["FuelCapacity"]
+
+    log("debug", filtered)
 
     return filtered
 

@@ -128,13 +128,15 @@ def parse(entry):
 
 CONTEXT = """
 We are looking at the buy/sell market.
-We consider a high profit, profit values > 500. We consider a bad profit any negative profit value.
+We consider a good profit, profit values > 1000 CR. We consider a bad profit any negative profit value.
 Give me your impression about the market based on an average profit of the market.
-Report the top opportunities to buy and sell, but only the ones with high profit, if any.
-Tell me if we have any cargo we can sell for a positive profit.
-Tell me if there are any rare goods available.
+Advice about items that have good profit margins, but warn if they might be illegal on other markets.
 Don't mention the actual profit value.
+Limpets are not considered a bug/sell good.
 """
 
+# Report the top opportunities to buy and sell that have high proffit margins.
+# Tell me if we have any cargo we can sell for a positive profit.
+# Tell me if there are any rare goods available.
 ## Event Example ##
 ## { "timestamp":"2025-02-02T14:33:38Z", "event":"Market", "MarketID":128103160, "StationName":"James Sneddon", "StationType":"Orbis", "StarSystem":"Morten-Marte" }

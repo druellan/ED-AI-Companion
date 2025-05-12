@@ -5,6 +5,7 @@ import sys
 
 import requests
 
+from components.memory_manager import get_recent_memory
 from components.utils import json_to_compact_text, log
 from config import EDSM_API
 
@@ -21,11 +22,20 @@ from config import EDSM_API
 
 
 def get_memory(event_name=None):
-    """Retrieves the last 100 events from the ship journal."""
-    # TODO: Implement logic to fetch recent journal events
-    log("info", f"Tool: get_memory called with event_name={event_name}")
-    # Example return structure
-    return json.dumps({"tool_response": "Memory data placeholder"})
+    """Retrieves the last 100 events from the ship journal.
+    If event_name is specified, it filters the events by that name."""
+    log("info", f"Tool: get_memory called with event_name='{event_name}'")
+
+    # Retrieve the last 100 events by default
+    recent_events = get_recent_memory(count=100)
+
+    if event_name:
+        filtered_events = [
+            event for event in recent_events if event.get("event") == event_name
+        ]
+        return json.dumps(filtered_events)
+    else:
+        return json.dumps(recent_events)
 
 
 def get_system(system_name):

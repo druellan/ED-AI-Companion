@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+We paid off outstanding bounties against us.
 """

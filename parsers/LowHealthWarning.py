@@ -3,4 +3,5 @@ def parse(entry):
 
 
 CONTEXT = """
+Our ship's hull integrity is critically low.
 """
