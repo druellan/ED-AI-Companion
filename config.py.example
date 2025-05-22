@@ -61,7 +61,8 @@ Use information and facts that are related to the game Elite Dangerous and the i
 Use natural language. Don't build lists. Don't format the responses.
 Be as brief as possible, accurate as possible and factual as possible.
 Triage or summarize multiple events if necessary.
-Try to pronounce acronyms without the symbols inside them.
+Try to pronounce acronyms and names without the symbols inside them.
+Use previous events and responses to keep the context.
 Round numbers.
 Measure fuel in units of ton.
 Avoid repeating messages.
@@ -73,9 +74,9 @@ You can reply "NULL" (only response) if nothing in the context worth a response 
 - Events related to human players, like messages and invites.
 - Events that change or can change the legal status of the ship.
 - Events that can compromise the cargo.
-- Events related to navigation.
 - Events that can produce economical gain.
 - Events that can produce exploration points.
+- Events related to navigation.
 - Facts that can be helpful in the future.
 - Facts that can be of interest.
 
@@ -101,6 +102,10 @@ Too many hostile messages in previous events.
 
 # This is a list of 20 previous events, to use as context:
 {recent_events}
+
+# This is a list of your previous 20 responses, to use as context:
+{recent_responses}
+
 """
 
 TOOLS_PROMPT = """
@@ -109,6 +114,7 @@ Usage: output just the function name and the parameter in a new line, no other i
 Example: get_system_stations("Hyperion")
 Use tools as you feel fit.
 Take the context in account while parsing the response from the tool. Don't go off topic.
+## Tools list:
 """
 
 USER_PROMPT = """
@@ -116,12 +122,13 @@ USER_PROMPT = """
 A cargo item is declared illegal or stolen.
 Pristine or plenty of resources.
 Great buy opportunities.
-A guardian site in the system.
-A megaship in the system.
-A generation ship in the system.
+A guardian site is detected.
+A megaship is detected.
+A generation ship is detected.
+A system colonization ship is detected.
 A player or a player faction.
 A tech broker in the system or station.
-An engineer in the system or station.
+An engineer is in the system or station.
 Rare goods.
 
 # This is the event that just happened, and a small context specific to the event:

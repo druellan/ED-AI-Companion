@@ -45,9 +45,9 @@ def parse(entry):
 
 CONTEXT = """
 We just scanned a new body or a nav beacon in the system.
-On ScanType=NavBeaconDetail, be brief and provide only the most remarkable information.
+On ScanType=NavBeaconDetail, summarize and provide only the remarkable information.
 On ScanType=Detailed, inform about the body characteristics.
-If ScanType=AutoScan, be brief, mention only remarkable features.
+If ScanType=AutoScan, be brief and provide only the most remarkable information.
 If ScanType=AutoScan and previous event=FSDJump this is our first time in the system.
 """
 

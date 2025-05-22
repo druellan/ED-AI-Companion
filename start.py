@@ -3,10 +3,9 @@
 import asyncio
 import json
 import os
-import time
 
 from components.ai_interface import check_openrouter_rate_limits, send_event_to_api
-from components.memory_manager import add_memory, init_memory
+from components.memory_manager import add_event_memory, init_event_memory
 from components.mission_manager import init_missions, update_missions
 from components.state_manager import init_state, update_state
 from components.tts_manager import send_text_to_voice
@@ -71,7 +70,7 @@ async def monitor_journal():
             if new_lines:
                 await process_journal_entries(new_lines)
             else:
-                time.sleep(1)
+                await asyncio.sleep(1)
 
 
 async def process_journal_entries(lines):
@@ -98,7 +97,7 @@ async def process_journal_entries(lines):
             log("debug", entry)
 
         update_state(entry)
-        add_memory(entry)
+        add_event_memory(entry)
         update_missions(entry)
 
         # If this is a new event type, process the previous batch
@@ -205,7 +204,7 @@ if __name__ == "__main__":
         log("info", f"Text-to-Speech: type {TTS_TYPE} voice {TTS_EDGE_VOICE}")
 
     init_state()
-    init_memory()
+    init_event_memory()
     init_missions()
 
     log("info", "All systems ready!")
