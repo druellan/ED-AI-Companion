@@ -3,6 +3,6 @@ def parse(entry):
 
 
 CONTEXT = """
-    We detected a new discovery in the system.
-    Just provide a summary of the discovery. Be brief.
+We detected a new discovery in the system.
+Provide information ONLY if this is a new discovery.
 """

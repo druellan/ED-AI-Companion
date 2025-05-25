@@ -3,10 +3,13 @@
 import asyncio
 import json
 import os
-import time
 
 from components.ai_interface import check_openrouter_rate_limits, send_event_to_api
-from components.memory_manager import add_memory, init_memory
+from components.memory_manager import (
+    add_event_memory,
+    init_event_memory,
+    init_response_memory,
+)
 from components.mission_manager import init_missions, update_missions
 from components.state_manager import init_state, update_state
 from components.tts_manager import send_text_to_voice
@@ -42,7 +45,7 @@ from config import (
 )
 from parsers import EVENT_PARSERS
 
-VERSION = "0.1.5"
+VERSION = "0.2.0"
 
 
 # Monitor the journal files for new events
@@ -71,7 +74,7 @@ async def monitor_journal():
             if new_lines:
                 await process_journal_entries(new_lines)
             else:
-                time.sleep(1)
+                await asyncio.sleep(1)
 
 
 async def process_journal_entries(lines):
@@ -83,9 +86,9 @@ async def process_journal_entries(lines):
         except json.JSONDecodeError:
             continue
 
-    # Group consecutive entries by event type
-    current_event_type = None
+    # Process events in batches of 10 (regardless of type)
     current_batch = []
+    max_batch_size = 20
 
     for entry in entries:
         event_type = entry.get("event")
@@ -98,19 +101,18 @@ async def process_journal_entries(lines):
             log("debug", entry)
 
         update_state(entry)
-        add_memory(entry)
+        add_event_memory(entry)
         update_missions(entry)
 
-        # If this is a new event type, process the previous batch
-        if event_type != current_event_type:
-            if current_batch:
-                await process_event_batch(current_batch)
-            current_batch = [entry]
-            current_event_type = event_type
-        else:
-            current_batch.append(entry)
+        # Add entry to current batch
+        current_batch.append(entry)
 
-    # Process the final batch
+        # Process batch when it reaches max size
+        if len(current_batch) >= max_batch_size:
+            await process_event_batch(current_batch)
+            current_batch = []
+
+    # Process the final batch if there are any remaining events
     if current_batch:
         await process_event_batch(current_batch)
 
@@ -119,55 +121,83 @@ async def process_event_batch(batch):
     if not batch:
         return
 
-    event_type = batch[0]["event"]
-    log("event", f"Processing {len(batch)} {event_type} events")
+    log("event", f"Processing batch of {len(batch)} events")
 
     # Clean up each entry in the batch
     clean_batch = [
         cleanup_event(entry, ["timestamp", "build", "SystemAddress"]) for entry in batch
     ]
 
-    # Build concatenated string of events
-    entry_strings = []
-    for entry in clean_batch:
-        if event_type in EVENT_PARSERS:
-            parsed_entry = EVENT_PARSERS[event_type]["function"](entry)
-            if parsed_entry is not False:
-                entry_strings.append(json_to_compact_text(parsed_entry))
-        else:
-            entry_strings.append(json_to_compact_text(entry))
+    # Collect contexts and events separately
+    contexts = {}
+    event_strings = []
+    events_to_process = False
 
-    if not entry_strings:
-        log("event", "Parser ignored all events")
+    # First pass: collect all contexts by event type
+    for entry in clean_batch:
+        event_type = entry.get("event")
+
+        # Only process events that are in our EVENT_LIST
+        if event_type in EVENT_LIST and event_type in EVENT_PARSERS:
+            context = EVENT_PARSERS[event_type].get("context", "")
+            if context and event_type not in contexts:
+                contexts[event_type] = context
+
+    # Second pass: process all events
+    for entry in clean_batch:
+        event_type = entry.get("event")
+
+        # Only process events that are in our EVENT_LIST
+        if event_type in EVENT_LIST:
+            events_to_process = True
+            if event_type in EVENT_PARSERS:
+                parsed_entry = EVENT_PARSERS[event_type]["function"](entry)
+                if parsed_entry is not False:
+                    event_strings.append(
+                        f"Event {event_type}: {json_to_compact_text(parsed_entry)}"
+                    )
+            else:
+                event_strings.append(
+                    f"Event {event_type}: {json_to_compact_text(entry)}"
+                )
+
+    if not event_strings:
+        if events_to_process:
+            log("event", "Parser ignored all events")
+        else:
+            log("event", "No events in batch need processing")
         return False
 
-    # Add context if available
-    if event_type in EVENT_PARSERS and "context" in EVENT_PARSERS[event_type]:
-        final_string = (
-            EVENT_PARSERS[event_type]["context"]
-            + " Events: "
-            + "; ".join(entry_strings)
-        )
-    else:
-        final_string = "Events: " + "; ".join(entry_strings)
+    # Build the final string with contexts first, then events
+    final_parts = []
+
+    # Add all unique contexts first
+    for event_type, context in contexts.items():
+        final_parts.append(f"Context for {event_type}: {context}")
+
+    # Add all event data
+    final_parts.extend(event_strings)
+
+    # Join everything with newlines
+    final_string = "\n".join(final_parts)
 
     if DEBUG_PARSER_PROMPT:
         log("debug", final_string)
 
-    # If the event is in the list, send it to the AI
-    if event_type in EVENT_LIST:
-        log("event", f"Reacting to {event_type} events")
-        response_text = send_event_to_api(final_string)
+    # Send mixed events to the AI if we have any to process
+    log(
+        "event",
+        f"Reacting to an event batch with {len(event_strings)} processable events ({len(contexts)} unique contexts)",
+    )
+    response_text = send_event_to_api(final_string)
 
-        if response_text:
-            if "NULL" in response_text:
-                log("AI", "(AI dropped the response).")
-                return
+    if response_text:
+        if "NULL" in response_text:
+            log("AI", "(AI dropped the response).")
+            return
 
-            log("AI", f"{response_text}")
-            await speak_response(response_text)
-    else:
-        log("event", f"Ignoring {event_type} events")
+        log("AI", f"{response_text}")
+        await speak_response(response_text)
 
 
 # Send the response to the TTS engine, based on the config file
@@ -205,7 +235,8 @@ if __name__ == "__main__":
         log("info", f"Text-to-Speech: type {TTS_TYPE} voice {TTS_EDGE_VOICE}")
 
     init_state()
-    init_memory()
+    init_event_memory()
+    init_response_memory()
     init_missions()
 
     log("info", "All systems ready!")

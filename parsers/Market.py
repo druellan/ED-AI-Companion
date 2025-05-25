@@ -128,7 +128,6 @@ def parse(entry):
 
 CONTEXT = """
 We are looking at the buy/sell market.
-We consider a good profit, profit values > 1000 CR. We consider a bad profit any negative profit value.
 Give me your impression about the market based on an average profit of the market.
 Advice about items that have good profit margins, but warn if they might be illegal on other markets.
 Don't mention the actual profit value.

@@ -20,10 +20,14 @@ def init_state():
 
     with open(journal_file_path, "r") as file:
         for line in file:
-            entry = json.loads(line)
-            filtered_entry = filter_state_events(entry)
-            if filtered_entry:
-                add_states(filtered_entry)
+            try:
+                entry = json.loads(line)
+                filtered_entry = filter_state_events(entry)
+                if filtered_entry:
+                    add_states(filtered_entry)
+            except json.JSONDecodeError:
+                # Skip malformed JSON lines
+                continue
 
 
 # Gather information from the ingame status and save it to the ship-state.json file

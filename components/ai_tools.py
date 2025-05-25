@@ -5,9 +5,12 @@ import sys
 
 import requests
 
-from components.memory_manager import get_recent_memory
-from components.utils import json_to_compact_text, log
+from components.memory_manager import get_recent_event_memory
+
+# from components.utils import json_to_compact_text, log
 from config import EDSM_API
+from components.utils import log
+from components.tts_manager import send_text_to_voice
 
 # Placeholder functions for AI tools.
 # Implement the actual logic within these functions.
@@ -21,13 +24,18 @@ from config import EDSM_API
 #     return json.dumps({"tool_response": "Market data placeholder"})
 
 
-def get_memory(event_name=None):
-    """Retrieves the last 100 events from the ship journal.
-    If event_name is specified, it filters the events by that name."""
+def ai_tool_test():
+    """Test function. Use it for test the tools functionality"""
+    send_text_to_voice("I just used a tool, Commander!")
+    log("info", "I just used a tool, Commander!")
+
+
+def get_events(event_name=None):
+    """Retrieves the last 100 events from the ship journal. If event_name is specified, it filters the events by that name."""
     log("info", f"Tool: get_memory called with event_name='{event_name}'")
 
     # Retrieve the last 100 events by default
-    recent_events = get_recent_memory(count=100)
+    recent_events = get_recent_event_memory(count=100)
 
     if event_name:
         filtered_events = [

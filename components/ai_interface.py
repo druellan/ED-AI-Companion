@@ -1,15 +1,21 @@
 # components/ai_interface.py
-import inspect  # Added import for inspect
 import json
 import os
-import re  # Added import for regex
+import re
+
+from typing import cast
 
 import requests
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from components import ai_tools
 from components.ai_tools import get_available_tools
-from components.memory_manager import get_recent_memory
+from components.memory_manager import (
+    get_recent_event_memory,
+    add_response_memory,
+    get_recent_response_memory,
+)
 from components.mission_manager import get_missions
 from components.state_manager import get_state_all
 from components.utils import json_to_compact_text, log
@@ -55,14 +61,17 @@ def send_event_to_api(event_data, tool_response=None):
     log("AI", f"Estimated tokens: {estimated_tokens}")
 
     # get ready the prompts
-    messages = [
+    messages: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": get_system_prompt()},
         {"role": "user", "content": get_user_prompt(event_data)},
     ]
 
     # Add tool response if it exists (this will be used for the new tool calling mechanism)
+
     if tool_response:
-        messages.append({"role": "tool", "content": tool_response})
+        messages.append(
+            cast(ChatCompletionMessageParam, {"role": "tool", "content": tool_response})
+        )
 
     # Send the prompt content to a plain text file
     if DEBUG_AI_PROMPT_DUMP:
@@ -75,11 +84,12 @@ def send_event_to_api(event_data, tool_response=None):
             elif message.get("role") == "user":
                 user_content = message.get("content", "")
 
+        # debug to check how the last prompt has constructed
         with open("last_prompt.json", "w", encoding="utf-8") as file:
             file.write("--- SYSTEM ---\n")
-            file.write(system_content)
+            file.write(str(system_content))
             file.write("\n\n--- USER ---\n")
-            file.write(user_content)
+            file.write(str(user_content))
             file.write("\n")
 
     # get the AI response
@@ -94,7 +104,7 @@ def send_event_to_api(event_data, tool_response=None):
         )
 
         if hasattr(ai_response, "error"):
-            log("error", f"API Error: {ai_response.error}")
+            log("error", f"API Error: {ai_response}")
             return "API Error"
 
         if not ai_response or not ai_response.choices:
@@ -104,6 +114,8 @@ def send_event_to_api(event_data, tool_response=None):
         ai_message_content = ai_response.choices[0].message.content
 
         # Process the AI response for tool calls
+
+        tool_output = None
         if LLM_USE_TOOLS:
             tool_output = get_tool_response(ai_message_content)
 
@@ -113,9 +125,10 @@ def send_event_to_api(event_data, tool_response=None):
             return send_event_to_api(event_data, json_to_compact_text(tool_output))
         else:
             # Otherwise, return the AI's original message content
+            add_response_memory(ai_message_content)
             return ai_message_content
 
-    except Exception as e:
+    except requests.exceptions.HTTPError as e:
         log("error", f"An API error occurred: {e}")
         # Attempt to extract and print the JSON response if available
         if hasattr(e, "response") and hasattr(e.response, "json"):
@@ -195,7 +208,8 @@ def get_tool_response(ai_message_content):
 def get_system_prompt():
     # Replace status placeholder in system prompt
     global_status = get_state_all()
-    recent_events = get_recent_memory(20)
+    recent_events = get_recent_event_memory(20)
+    recent_responses = get_recent_response_memory(20)
     missions = get_missions()
 
     try:
@@ -211,11 +225,12 @@ def get_system_prompt():
         .replace("{recent_events}", json_to_compact_text(recent_events))
         .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
         .replace("{current_missions}", json_to_compact_text(missions))
+        .replace("{recent_responses}", json_to_compact_text(recent_responses))
     )
 
     if LLM_USE_TOOLS:
-        system_prompt.join(TOOLS_PROMPT)
-        system_prompt.join(get_available_tools())
+        system_prompt += TOOLS_PROMPT
+        system_prompt += get_available_tools()
 
     # log("debug", system_prompt)
     return system_prompt
