@@ -7,10 +7,16 @@ A collection of Python scripts to monitor the Elite Dangerous journal files and 
 The idea is to provide audio feedback for the most common events in the game, such as jumps, combat, docking, etc., while using the small and *free* LLMs from *OpenRouter*. Unlike COVAS:NEXT, this project does not provide interactivity with the AI, and the intention is to have an intelligence that can provide really useful information to the player without any input.
 
 ### Features
+* Descriptive system prompt setups the instructions and information for the AI to decide what to say or just remain silent.
 * Each event can have a personalized parser that can be used to  preprocess and enrich the information with web content and third-party APIs.
-* Grouping of consecutive similar events to send them in bulk to the AI.
+* Grouping of consecutive events to send them in bulk to the AI.
 * The AI can make use of tools; we are injecting them directly in the system prompt to bypass the restrictions free LLMs usually have, so results can vary.
-* I'm also keeping a memory file for the ship state `ship-state.json` (fuel levels, last place visited, etc), for missions `missions_memory.json` and past events `event_memory.json`, all of it is injected in the system prompt.
+* Memory:
+  - `ship-state.json` - (fuel levels, last place visited, etc)
+  - `missions_memory.json` - active missions
+  - `event_memory.json` - list of the last 20.000 events in the game, last 20 are injected in the system prompt
+  - `response_memory.json` - list of the last 20.000 AI responses, last 20 are injected in the system prompt
+* Average token count of 3.000 tokens per event.
 
 ### Demo Videos
 [Reacting to undock, new destination, radio chatter and system arrival](https://vimeo.com/1074661030) (Edge TTS without audio filters)
