@@ -28,13 +28,13 @@ from config import (
 
 async def send_text_to_voice(text):
     if TTS_TYPE == "WINDOWS":
-        send_local_text_to_voice(text)
+        _send_local_text_to_voice(text)
     else:
-        await send_edge_text_to_voice(text)
+        await _send_edge_text_to_voice(text)
 
 
 # Text-to-Speech functions, using Windows TTS
-def send_local_text_to_voice(text):
+def _send_local_text_to_voice(text):
     engine = pyttsx3.init()
     voices = engine.getProperty("voices")
 
@@ -65,7 +65,7 @@ def send_local_text_to_voice(text):
 
             # Add effects if enabled
             if TTS_EFFECTS:
-                add_audio_effects(temp_file)
+                _add_audio_effects(temp_file)
 
             # Play with pygame mixer
             mixer.init()
@@ -88,7 +88,7 @@ def send_local_text_to_voice(text):
 
 
 # Text-to-Speech functions, using Edge TTS
-async def send_edge_text_to_voice(text):
+async def _send_edge_text_to_voice(text):
     try:
         voice = TTS_EDGE_VOICE
         rate = TTS_EDGE_RATE
@@ -103,7 +103,7 @@ async def send_edge_text_to_voice(text):
 
         # Add effects to the audio file
         if TTS_EFFECTS:
-            add_audio_effects(temp_file)
+            _add_audio_effects(temp_file)
 
         # Play with pygame mixer
         mixer.init()
@@ -124,10 +124,10 @@ async def send_edge_text_to_voice(text):
         # Optionally fall back to Windows TTS
         if TTS_TYPE != "WINDOWS":
             log("info", "Falling back to Windows TTS")
-            send_local_text_to_voice(text)
+            _send_local_text_to_voice(text)
 
 
-def add_audio_effects(audio):
+def _add_audio_effects(audio):
     # Load the audio file
     audio, sample_rate = sf.read("./tts-temp.mp3")
 

@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 
-from components.ai_interface import check_openrouter_rate_limits, send_event_to_api
+from components.ai_interface import get_openrouter_rate_limits, send_event_to_api
 from components.memory_manager import (
     add_event_memory,
     init_event_memory,
@@ -29,6 +29,7 @@ from config import (
     EXPLORATION_EVENTS,
     FLEET_CARRIER_EVENTS,
     JOURNAL_DIRECTORY,
+    JOURNAL_TIME_INTERVAL,
     LLM_MODEL_NAME,
     ODYSSEY_EVENTS,
     OTHER_EVENTS,
@@ -49,7 +50,7 @@ VERSION = "0.2.0"
 
 
 # Monitor the journal files for new events
-async def monitor_journal():
+async def _monitor_journal():
     current_journal = get_latest_journal_file(JOURNAL_DIRECTORY)
     if not current_journal:
         log("system", "No journal files found.")
@@ -72,12 +73,12 @@ async def monitor_journal():
             file.seek(0, os.SEEK_END)
 
             if new_lines:
-                await process_journal_entries(new_lines)
+                await _process_journal_entries(new_lines)
             else:
-                await asyncio.sleep(1)
+                await asyncio.sleep(JOURNAL_TIME_INTERVAL)
 
 
-async def process_journal_entries(lines):
+async def _process_journal_entries(lines):
     entries = []
     for line in lines:
         try:
@@ -109,15 +110,15 @@ async def process_journal_entries(lines):
 
         # Process batch when it reaches max size
         if len(current_batch) >= max_batch_size:
-            await process_event_batch(current_batch)
+            await _process_event_batch(current_batch)
             current_batch = []
 
     # Process the final batch if there are any remaining events
     if current_batch:
-        await process_event_batch(current_batch)
+        await _process_event_batch(current_batch)
 
 
-async def process_event_batch(batch):
+async def _process_event_batch(batch):
     if not batch:
         return
 
@@ -197,11 +198,11 @@ async def process_event_batch(batch):
             return
 
         log("AI", f"{response_text}")
-        await speak_response(response_text)
+        await _speak_response(response_text)
 
 
 # Send the response to the TTS engine, based on the config file
-async def speak_response(response):
+async def _speak_response(response):
     if response is False:
         return
 
@@ -227,7 +228,7 @@ if __name__ == "__main__":
 
     log("info", f"Welcome to ED:AI Companion V{VERSION}, Commander")
     log("info", f"Main model to use: {LLM_MODEL_NAME}")
-    check_openrouter_rate_limits()
+    get_openrouter_rate_limits()
 
     if TTS_TYPE == "WINDOWS":
         log("info", f"Text-to-Speech: type {TTS_TYPE} voice {TTS_WINDOWS_VOICE}")
@@ -240,6 +241,6 @@ if __name__ == "__main__":
     init_missions()
 
     log("info", "All systems ready!")
-    asyncio.run(speak_response("All systems ready."))
+    asyncio.run(_speak_response("All systems ready."))
 
-    asyncio.run(monitor_journal())
+    asyncio.run(_monitor_journal())

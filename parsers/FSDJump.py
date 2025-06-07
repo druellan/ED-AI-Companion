@@ -24,13 +24,14 @@ def parse(entry):
 
 CONTEXT = """
 Our ship just arrived to another system.
-If this is our first time in the system:
+If previous event is "event":"FSSSignalDiscovered", we already visited this system.
+If we arrived to the final destination:
 - Describe the system allegiance
 - Describe the system faction and system faction state. Note if I have reputation with the faction (bad, average, good, excellent)
 - Note if the happiness is low, otherwise, ignore this fact
 - Describe the system security level
 - Describe the system economy and population
-If this is a transition System
+If this is a navigation system:
 - Describe the system security levely
 """
 

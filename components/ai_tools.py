@@ -7,27 +7,64 @@ import requests
 
 from components.memory_manager import get_recent_event_memory
 
-# from components.utils import json_to_compact_text, log
-from config import EDSM_API
-from components.utils import log
+from config import EDSM_API, JOURNAL_DIRECTORY
+from components.utils import log, json_to_compact_text
 from components.tts_manager import send_text_to_voice
-
-# Placeholder functions for AI tools.
-# Implement the actual logic within these functions.
+import os
 
 
-# def get_market():
-#     """Retrieves a list of products from the local market, including prices and profit margins."""
-#     # TODO: Implement logic to fetch market data
-#     log("info", "Tool: get_market called")
-#     # Example return structure (adjust based on actual data)
-#     return json.dumps({"tool_response": "Market data placeholder"})
+async def get_init_data():
+    """Retrieves information needed for ALL events."""
+
+    await send_text_to_voice("I'm using tools now, Commander.")
+
+    return ""
 
 
-def ai_tool_test():
-    """Test function. Use it for test the tools functionality"""
-    send_text_to_voice("I just used a tool, Commander!")
-    log("info", "I just used a tool, Commander!")
+def get_navroute():
+    """Retrieves the current navigation route from NavRoute.json and returns it in compact text format."""
+    log("info", "Tool: get_navroute called")
+    navroute_file_path = os.path.join(JOURNAL_DIRECTORY, "NavRoute.json")
+    try:
+        with open(navroute_file_path, "r", encoding="utf-8") as f:
+            navroute_data = json.load(f)
+
+        compact_navroute_data = json_to_compact_text(navroute_data)
+        return json.dumps({"tool_response": compact_navroute_data})
+    except FileNotFoundError:
+        log("error", f"NavRoute.json not found at {navroute_file_path}")
+        return json.dumps({"tool_response": "Error: NavRoute.json not found"})
+    except json.JSONDecodeError:
+        log("error", f"Error decoding NavRoute.json at {navroute_file_path}")
+        return json.dumps({"tool_response": "Error: Could not decode NavRoute.json"})
+    except Exception as e:
+        log("error", f"An unexpected error occurred in get_navroute: {e}")
+        return json.dumps(
+            {"tool_response": f"Error: An unexpected error occurred: {e}"}
+        )
+
+
+def get_market():
+    """Retrieves a list of products from the local market, including prices and profit margins."""
+    log("info", "Tool: get_market called")
+    market_file_path = os.path.join(JOURNAL_DIRECTORY, "Market.json")
+    try:
+        with open(market_file_path, "r", encoding="utf-8") as f:
+            market_data = json.load(f)
+
+        compact_market_data = json_to_compact_text(market_data)
+        return json.dumps({"tool_response": compact_market_data})
+    except FileNotFoundError:
+        log("error", f"Market.json not found at {market_file_path}")
+        return json.dumps({"tool_response": "Error: Market.json not found"})
+    except json.JSONDecodeError:
+        log("error", f"Error decoding Market.json at {market_file_path}")
+        return json.dumps({"tool_response": "Error: Could not decode Market.json"})
+    except Exception as e:
+        log("error", f"An unexpected error occurred in get_market: {e}")
+        return json.dumps(
+            {"tool_response": f"Error: An unexpected error occurred: {e}"}
+        )
 
 
 def get_events(event_name=None):
@@ -172,7 +209,7 @@ def get_system_factions(system_name):
     return
 
 
-def get_available_tools():
+def _get_available_tools():
     tools_list = []
     for name, obj in inspect.getmembers(sys.modules[__name__]):
         if (
@@ -180,7 +217,6 @@ def get_available_tools():
             and not inspect.isbuiltin(obj)
             and not name.startswith("_")
             and obj.__doc__
-            and name != "get_available_tools()"  # Exclude this function itself
         ):
             description = obj.__doc__.strip()
             signature = inspect.signature(obj)
@@ -193,7 +229,7 @@ def get_available_tools():
 # Example usage (for testing within ai_tools.py)
 # if __name__ == "__main__":
 #     print("--- Available Tools ---")
-#     print(get_available_tools())
+#     print(_get_available_tools())
 #     print("\n--- Example Tool Calls ---")
 #     # print(get_memory())
 #     # print(get_system("Sol"))

@@ -1,4 +1,4 @@
-from start import init_state
+from components.state_manager import init_state
 
 
 def parse(entry):

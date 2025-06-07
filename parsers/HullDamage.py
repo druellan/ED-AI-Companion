@@ -1,4 +1,4 @@
-from start import cleanup_event
+from components.utils import cleanup_event
 
 
 def parse(entry):

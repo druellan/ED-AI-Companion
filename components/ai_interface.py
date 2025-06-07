@@ -10,7 +10,7 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 from components import ai_tools
-from components.ai_tools import get_available_tools
+from components.ai_tools import _get_available_tools
 from components.memory_manager import (
     get_recent_event_memory,
     add_response_memory,
@@ -36,6 +36,29 @@ from config import (
 )
 
 
+# Check the rate limits
+def get_openrouter_rate_limits():
+    response = requests.get(
+        url="https://openrouter.ai/api/v1/auth/key",
+        headers={"Authorization": f"Bearer {LLM_API_KEY}"},
+    )
+
+    # Get rate limits from the response data
+    data = response.json().get("data", {})
+    limit = data.get("limit")
+    limit_remaining = data.get("limit_remaining")
+    rate_limit = data.get("rate_limit", {})
+    rate_limit_requests = rate_limit.get("requests")
+    interval = rate_limit.get("interval")
+
+    log(
+        "info",
+        f"API Limit: {limit} ({limit_remaining}) | Rate Limit Requests: {rate_limit_requests} | Interval: {interval}",
+    )
+
+    return response
+
+
 # Send event data to the AI API
 def send_event_to_api(event_data, tool_response=None):
     client = OpenAI(
@@ -50,8 +73,8 @@ def send_event_to_api(event_data, tool_response=None):
 
     # Rough token estimation
     # Based on 4 chars per token (GPT uses slightly different rules but this is a rough estimate)
-    system_prompt_length = round(len(get_system_prompt()) // 4)
-    user_prompt_length = round(len(get_user_prompt(event_data)) // 4)
+    system_prompt_length = round(len(_get_system_prompt()) // 4)
+    user_prompt_length = round(len(_get_user_prompt(event_data)) // 4)
     estimated_tokens = system_prompt_length + user_prompt_length
 
     # Log the token estimation
@@ -62,8 +85,8 @@ def send_event_to_api(event_data, tool_response=None):
 
     # get ready the prompts
     messages: list[ChatCompletionMessageParam] = [
-        {"role": "system", "content": get_system_prompt()},
-        {"role": "user", "content": get_user_prompt(event_data)},
+        {"role": "system", "content": _get_system_prompt()},
+        {"role": "user", "content": _get_user_prompt(event_data)},
     ]
 
     # Add tool response if it exists (this will be used for the new tool calling mechanism)
@@ -117,7 +140,7 @@ def send_event_to_api(event_data, tool_response=None):
 
         tool_output = None
         if LLM_USE_TOOLS:
-            tool_output = get_tool_response(ai_message_content)
+            tool_output = _get_tool_response(ai_message_content)
 
         if tool_output:
             # If a tool was called and returned output, send it back to the AI
@@ -143,7 +166,7 @@ def send_event_to_api(event_data, tool_response=None):
         return "Error communicating with AI API"
 
 
-def get_tool_response(ai_message_content):
+def _get_tool_response(ai_message_content):
     pattern = r"^(\w+)\((.*)\)$"
     tool_output = None
 
@@ -205,7 +228,7 @@ def get_tool_response(ai_message_content):
 
 
 # Get the main prompt and enrich it with the current status
-def get_system_prompt():
+def _get_system_prompt():
     # Replace status placeholder in system prompt
     global_status = get_state_all()
     recent_events = get_recent_event_memory(20)
@@ -230,37 +253,14 @@ def get_system_prompt():
 
     if LLM_USE_TOOLS:
         system_prompt += TOOLS_PROMPT
-        system_prompt += get_available_tools()
+        system_prompt += _get_available_tools()
 
     # log("debug", system_prompt)
     return system_prompt
 
 
 # Get the main prompt and add the context
-def get_user_prompt(context):
+def _get_user_prompt(context):
     user_prompt = USER_PROMPT.replace("{event_new}", str(context))
 
     return user_prompt
-
-
-# Check the rate limits
-def check_openrouter_rate_limits():
-    response = requests.get(
-        url="https://openrouter.ai/api/v1/auth/key",
-        headers={"Authorization": f"Bearer {LLM_API_KEY}"},
-    )
-
-    # Get rate limits from the response data
-    data = response.json().get("data", {})
-    limit = data.get("limit")
-    limit_remaining = data.get("limit_remaining")
-    rate_limit = data.get("rate_limit", {})
-    rate_limit_requests = rate_limit.get("requests")
-    interval = rate_limit.get("interval")
-
-    log(
-        "info",
-        f"API Limit: {limit} ({limit_remaining}) | Rate Limit Requests: {rate_limit_requests} | Interval: {interval}",
-    )
-
-    return response
