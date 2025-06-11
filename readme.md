@@ -7,19 +7,21 @@ A collection of Python scripts to monitor the Elite Dangerous journal files and 
 The idea is to provide audio feedback for the most common events in the game, such as jumps, combat, docking, etc., while using the small and *free* LLMs from *OpenRouter*. Unlike COVAS:NEXT, this project does not provide interactivity with the AI, and the intention is to have an intelligence that can provide really useful information to the player without any input.
 
 ### Features
-* Descriptive system prompt setups the instructions and information for the AI to decide what to say or just remain silent.
-* Each event can have a personalized parser that can be used to  preprocess and enrich the information with web content and third-party APIs.
+* A minimal but descriptive prompt tailored specifically for the game. The AI can decide to analyze the events and provide feedback or just remain silent.
+* Works well with free and small models.
+* Each event can have a personalized parser that can be used to preprocess and enrich the information with web content and third-party APIs.
 * Grouping of consecutive events to send them in bulk to the AI.
 * The AI can make use of tools; we are injecting them directly in the system prompt to bypass the restrictions free LLMs usually have, so results can vary.
-* Memory:
+* Memory bank:
   - `ship-state.json` - (fuel levels, last place visited, etc)
   - `missions_memory.json` - active missions
-  - `event_memory.json` - list of the last 20.000 events in the game, last 20 are injected in the system prompt
-  - `response_memory.json` - list of the last 20.000 AI responses, last 20 are injected in the system prompt
+  - `event_memory.json` - list of the last 20.000 events in the game
+  - `response_memory.json` - list of the last 20.000 AI responses
+* Automatic retrieval of the last 20 events and AI responses on each prompt. Access to 100 more via the tools.
 * Average token count of 3.000 tokens per event.
 
 ### Demo Videos
-[Reacting to undock, new destination, radio chatter and system arrival](https://vimeo.com/1074661030) (Edge TTS without audio filters)
+[Reacting to undock, new destination, radio chatter, and system arrival](https://vimeo.com/1074661030) (Edge TTS without audio filters)
 
 [Reacting to mining: core found](https://vimeo.com/1074660573) (Edge TTS with audio filters)
 
@@ -28,7 +30,7 @@ You might need Python 3.x installed in the system.
  - Install the requirements with ```pip install -r requirements.txt```
  - Copy or rename the `config.py.example` file to `config.py`
  - Open the `config.py` and paste your OpenRouter key on the `LLM_API_KEY` variable. The script should work without any other modification, but take a look at the settings in case you want to change something.
- - To run the script use `python start.py` You can run the script right from the start or when ED: Dangerous is already working.
+ - To run the script use `python start.py` You can run the script right from the start or when ED: Dangerous is already running.
 
 You want to create your own parsers? Just create a new file in the `/parsers` directory using the exact name of the event you want to parse. I recommend copying another parser that provides a similar functionality to use as a template. 
 Do you want to use Cortana/Eva voice on Windows? Use the registry patch file included: `Microsoft-Eva-Mobile.reg` to make that voice available.
