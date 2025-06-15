@@ -4,7 +4,7 @@ def parse(entry):
 
 CONTEXT = """
 We just discovered a signal source.
-Mention only remarkable findings.
+Mention only remarkable findings (like high threat level).
 Check previous events to ensure you are not repeating the same information.
 """
 
