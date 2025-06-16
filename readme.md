@@ -17,8 +17,8 @@ The idea is to provide audio feedback for the most common events in the game, su
   - `missions_memory.json` - active missions
   - `event_memory.json` - list of the last 20.000 events in the game
   - `response_memory.json` - list of the last 20.000 AI responses
-* Automatic retrieval of the last 20 events and AI responses on each prompt. Access to 100 more via the tools.
-* Average token count of 3.000 tokens per event.
+* Automatic retrieval of the last 50 events and AI responses on each prompt. Access to 100 more via the tools.
+* Average token count of 4.000 tokens per API call, can vary depending the event and the size of the memory blob.
 
 ### Demo Videos
 [Reacting to undock, new destination, radio chatter, and system arrival](https://vimeo.com/1074661030) (Edge TTS without audio filters)

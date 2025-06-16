@@ -3,5 +3,5 @@ openai==1.65.2
 pedalboard==0.9.16
 pygame==2.6.1
 pyttsx3==2.98
-Requests==2.32.3
+Requests==2.32.4
 soundfile==0.13.1

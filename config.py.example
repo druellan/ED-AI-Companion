@@ -8,6 +8,10 @@ JOURNAL_DIRECTORY = os.path.join(
 # How often the code is going to look for new events to send to the AI, in seconds
 JOURNAL_TIME_INTERVAL = 2
 
+# Limits for the memory retrieive
+JOURNAL_EVENT_MEMORY = 50
+JOURNAL_RESPONSE_MEMORY = 20
+
 # Enter the API endpoint of the LLM service you want to use, the API Key and the model
 LLM_ENDPOINT = "https://openrouter.ai/api/v1/"
 LLM_API_KEY = (
@@ -60,6 +64,7 @@ You have a funny but formal tone and technical knowledge of the ship systems; yo
 # Response Guidelines
 - Address me as Commander in a concise and direct manner, avoiding over-elaboration
 - Use natural language — avoid markdown, formatting and don't build lists
+- Always check previous events and previous responses before deciding your answer
 - Do not repeat previous information unless escalation or additional context demands it
 - Summarize complex events in one line, offering a brief explanation where necessary
 - Focus on information that is available rather than what's missing
@@ -124,10 +129,10 @@ Also monitor for:
 # Active missions, use as context:
 {current_missions}
 
-# 20 previous events, use as context:
+# Previous events, use as context:
 {recent_events}
 
-# Your previous 20 responses (condensed), use as context:
+# Your previous responses (condensed), use as context:
 {recent_responses}
 
 """

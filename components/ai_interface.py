@@ -24,6 +24,8 @@ from components.utils import json_to_compact_text, log
 from config import (
     DEBUG_AI_PROMPT_DUMP,
     JOURNAL_DIRECTORY,
+    JOURNAL_EVENT_MEMORY,
+    JOURNAL_RESPONSE_MEMORY,
     LLM_API_KEY,
     LLM_ENDPOINT,
     LLM_MAX_TOKENS_ALERT,
@@ -231,8 +233,8 @@ def _get_tool_response(ai_message_content):
 def _get_system_prompt():
     # Replace status placeholder in system prompt
     global_status = get_state_all()
-    recent_events = get_recent_event_memory(20)
-    recent_responses = get_recent_response_memory(20)
+    recent_events = get_recent_event_memory(JOURNAL_EVENT_MEMORY)
+    recent_responses = get_recent_response_memory(JOURNAL_RESPONSE_MEMORY)
     missions = get_missions()
 
     try:
