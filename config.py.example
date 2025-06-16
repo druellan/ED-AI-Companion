@@ -9,7 +9,7 @@ JOURNAL_DIRECTORY = os.path.join(
 JOURNAL_TIME_INTERVAL = 2
 
 # Limits for the memory retrieive
-JOURNAL_EVENT_MEMORY = 50
+JOURNAL_EVENT_MEMORY = 40
 JOURNAL_RESPONSE_MEMORY = 20
 
 # Enter the API endpoint of the LLM service you want to use, the API Key and the model
