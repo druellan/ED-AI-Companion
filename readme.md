@@ -33,8 +33,11 @@ You might need Python 3.x installed in the system and a free [OpenRouter account
  - Open the `config.py` and paste your OpenRouter key on the `LLM_API_KEY` variable. The script should work without any other change, but take a look at the settings in case you want to change something.
  - To run the script use `./start.cmd` or `python start.py` You can run the script right from the start or when ED: Dangerous is already running.
 
-You want to create your own parsers? Just create a new file in the `/parsers` directory using the exact name of the event you want to parse. I recommend copying another parser that provides a similar functionality to use as a template. 
-Do you want to use Cortana/Eva voice on Windows? Use the registry patch file included: `Microsoft-Eva-Mobile.reg` to make that voice available.
+### Cortana native voice:
+If you are using the native text-to-speech Windows system (check the config file for that) and you want to have the Cortnana voice, use the registry patch file included: `Microsoft-Eva-Mobile.reg` to make that voice available.
+
+### Modify or create custom parsers
+Just look for or create a new file in the `/parsers` directory using the exact name of the event you want to parse. I recommend copying another parser that provides a similar functionality to use as a template.
 
 ### About the config file
 I'm changing the configurations a LOT, so new versions of the project might require update the config.py file.
