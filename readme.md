@@ -26,11 +26,12 @@ The idea is to provide audio feedback for the most common events in the game, su
 [Reacting to mining: core found](https://vimeo.com/1074660573) (Edge TTS with audio filters)
 
 ### To make it work
-You might need Python 3.x installed in the system.
+You might need Python 3.x installed in the system and a free [OpenRouter account](https://openrouter.ai/)
+ - Clone or download the coe repository.
  - Install the requirements with ```pip install -r requirements.txt```
  - Copy or rename the `config.py.example` file to `config.py`
- - Open the `config.py` and paste your OpenRouter key on the `LLM_API_KEY` variable. The script should work without any other modification, but take a look at the settings in case you want to change something.
- - To run the script use `python start.py` You can run the script right from the start or when ED: Dangerous is already running.
+ - Open the `config.py` and paste your OpenRouter key on the `LLM_API_KEY` variable. The script should work without any other change, but take a look at the settings in case you want to change something.
+ - To run the script use `./start.cmd` or `python start.py` You can run the script right from the start or when ED: Dangerous is already running.
 
 You want to create your own parsers? Just create a new file in the `/parsers` directory using the exact name of the event you want to parse. I recommend copying another parser that provides a similar functionality to use as a template. 
 Do you want to use Cortana/Eva voice on Windows? Use the registry patch file included: `Microsoft-Eva-Mobile.reg` to make that voice available.
