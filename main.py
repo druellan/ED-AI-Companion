@@ -30,6 +30,8 @@ from config import (
     FLEET_CARRIER_EVENTS,
     JOURNAL_DIRECTORY,
     JOURNAL_TIME_INTERVAL,
+    IDLE_PROMPT,
+    IDLE_TIMEOUT,
     LLM_MODEL_NAME,
     ODYSSEY_EVENTS,
     OTHER_EVENTS,
@@ -46,12 +48,13 @@ from config import (
 )
 from parsers import EVENT_PARSERS
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 
 # Monitor the journal files for new events
 async def _monitor_journal():
     current_journal = get_latest_journal_file(JOURNAL_DIRECTORY)
+    impatient_counter = 0
     if not current_journal:
         log("system", "No journal files found.")
         return
@@ -74,7 +77,15 @@ async def _monitor_journal():
 
             if new_lines:
                 await _process_journal_entries(new_lines)
+                impatient_counter = 0
             else:
+                impatient_counter += 1
+                if impatient_counter == IDLE_TIMEOUT / JOURNAL_TIME_INTERVAL:
+                    impatient_counter = 0
+                    response = send_event_to_api(IDLE_PROMPT)
+                    if response:
+                        log("AI", response)
+                        await _speak_response(response)
                 await asyncio.sleep(JOURNAL_TIME_INTERVAL)
 
 
@@ -110,8 +121,7 @@ async def _process_journal_entries(lines):
 
         # Process batch when it reaches max size
         if len(current_batch) >= max_batch_size:
-            await _process_event_batch(current_batch)
-            current_batch = []
+            break
 
     # Process the final batch if there are any remaining events
     if current_batch:
@@ -174,7 +184,7 @@ async def _process_event_batch(batch):
 
     # Add all unique contexts first
     for event_type, context in contexts.items():
-        final_parts.append(f"Context for {event_type}: {context}")
+        final_parts.append(f"Context for event: {event_type}: {context}")
 
     # Add all event data
     final_parts.extend(event_strings)

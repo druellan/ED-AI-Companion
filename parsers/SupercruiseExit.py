@@ -1,7 +1,7 @@
 import requests
 
 from config import EDSM_API
-from start import cleanup_event
+from main import cleanup_event
 
 
 def parse(entry):

@@ -44,8 +44,9 @@ def init_response_memory():
         with open("response_memory.json", "r") as file:
             response_memory.extend(json.load(file))
     except FileNotFoundError:
-        log("ERROR", "Response memory file not found")
-        pass
+        log("INFO", "Response memory file not found. Creating a new one.")
+        with open("response_memory.json", "w") as file:
+            json.dump([], file)
 
 
 def add_response_memory(response_string):

@@ -17,8 +17,8 @@ The idea is to provide audio feedback for the most common events in the game, su
   - `missions_memory.json` - active missions
   - `event_memory.json` - list of the last 20.000 events in the game
   - `response_memory.json` - list of the last 20.000 AI responses
-* Automatic retrieval of the last 50 events and AI responses on each prompt. Access to 100 more via the tools.
-* Average token count of 4.000 tokens per API call, can vary depending the event and the size of the memory blob.
+* Automatic retrieval of the last events and AI responses on each prompt. Access to 100 more via the tools.
+* Average token count of 3.000 tokens per API call, can vary depending the event and the size of the memory blob.
 
 ### Demo Videos
 [Reacting to undock, new destination, radio chatter, and system arrival](https://vimeo.com/1074661030) (Edge TTS without audio filters)
@@ -31,7 +31,7 @@ You might need Python 3.x installed in the system and a free [OpenRouter account
  - Install the requirements with ```pip install -r requirements.txt```
  - Copy or rename the `config.py.example` file to `config.py`
  - Open the `config.py` and paste your OpenRouter key on the `LLM_API_KEY` variable. The script should work without any other change, but take a look at the settings in case you want to change something.
- - To run the script use `./start.cmd` or `python start.py` You can run the script right from the start or when ED: Dangerous is already running.
+ - To run the script use `python main.py` You can run the script right from the start or when ED: Dangerous is already running.
 
 ### Cortana native voice:
 If you are using the native text-to-speech Windows system (check the config file for that) and you want to have the Cortnana voice, use the registry patch file included: `Microsoft-Eva-Mobile.reg` to make that voice available.

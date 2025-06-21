@@ -108,7 +108,7 @@ def get_system(system_name):
 
 
 def get_system_bodies(system_name):
-    """Gets EDSM body info for the given system name."""
+    """Get bodies on a system."""
     # log("debug", f"Tool: get_system_bodies called with system_name={system_name}")
 
     if not system_name:
@@ -128,7 +128,7 @@ def get_system_bodies(system_name):
 
 
 def get_system_scan(system_name):
-    """Gets estimated value and valuable bodies in a system from EDSM."""
+    """Gets estimated value and valuable bodies in a system."""
     if not system_name:
         log("error", "System name is required for get_system_scan.")
         return
@@ -148,7 +148,7 @@ def get_system_scan(system_name):
 
 
 def get_system_stations(system_name):
-    """Gets information about stations in a system from EDSM."""
+    """Gets information about stations in a system."""
 
     if not system_name:
         log("error", "System name is required for get_system_stations.")
@@ -167,7 +167,7 @@ def get_system_stations(system_name):
 
 
 def get_station_market(system_name):
-    """Gets information about the market in a system from EDSM."""
+    """Gets information about the market in a syste."""
     # log("debug", f"Tool: get_station_market called with systemName={system_name}")
 
     if not system_name:
@@ -189,7 +189,7 @@ def get_station_market(system_name):
 
 
 def get_system_factions(system_name):
-    """Gets information about the factions in a system from EDSM."""
+    """Gets information about the factions in a system."""
     # log("debug", f"Tool: get_system_factions called with system_name={system_name}")
 
     if not system_name:

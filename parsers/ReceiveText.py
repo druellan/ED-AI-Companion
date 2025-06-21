@@ -2,7 +2,7 @@
 # Other messages, I just want the AI to interpret them, since I can read the text if I want.
 # Cruise ship messages can be useful to pirates, but I need to find a way to avoid repetition.
 
-from start import cleanup_event
+from main import cleanup_event
 from components.utils import log
 
 

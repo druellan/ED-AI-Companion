@@ -132,6 +132,14 @@ Give me your impression about the market based on an average profit of the marke
 Advice about items that have good profit margins, but warn if they might be illegal on other markets.
 Don't mention the actual profit value.
 Limpets are not considered a bug/sell good.
+
+## Market value
+- Exceptional Profit – Profit > 10,000 CR
+- High Profit – 5,000 < Profit ≤ 10,000 CR
+- Moderate Profit – 1,000 < Profit ≤ 5,000 CR
+- Low/No Profit – 0 < Profit ≤ 1,000 CR
+- Loss – Profit ≤ 0 CR
+
 """
 
 # Report the top opportunities to buy and sell that have high proffit margins.

@@ -232,9 +232,12 @@ def _get_tool_response(ai_message_content):
 # Get the main prompt and enrich it with the current status
 def _get_system_prompt():
     # Replace status placeholder in system prompt
+    import datetime
+
     global_status = get_state_all()
     recent_events = get_recent_event_memory(JOURNAL_EVENT_MEMORY)
     recent_responses = get_recent_response_memory(JOURNAL_RESPONSE_MEMORY)
+    local_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     missions = get_missions()
 
     try:
@@ -251,6 +254,7 @@ def _get_system_prompt():
         .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
         .replace("{current_missions}", json_to_compact_text(missions))
         .replace("{recent_responses}", json_to_compact_text(recent_responses))
+        .replace("{local_time}", local_time)
     )
 
     if LLM_USE_TOOLS:
