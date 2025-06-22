@@ -9,8 +9,9 @@ The idea is to provide audio feedback for the most common events in the game, su
 ### Features
 * A minimal but descriptive prompt tailored specifically for the game. The AI can decide to analyze the events and provide feedback or just remain silent.
 * Works well with free and small models.
-* Each event can have a personalized parser that can be used to preprocess and enrich the information with web content and third-party APIs.
+* Each event can have a personalized parser that can be used to add more instructions, preprocess and enrich the information with web content and third-party APIs.
 * Grouping of consecutive events to send them in bulk to the AI.
+* Damage system, the more the ship is damaged, the more the AI voice degrades.
 * The AI can make use of tools; we are injecting them directly in the system prompt to bypass the restrictions free LLMs usually have, so results can vary.
 * Memory bank:
   - `ship-state.json` - (fuel levels, last place visited, etc)
