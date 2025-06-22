@@ -1,4 +1,3 @@
-from components.ai_tools import get_navroute
 import json
 
 
@@ -11,14 +10,6 @@ def parse(entry):
         ]
 
         entry["my_reputation"] = reputed_factions
-
-    # Call get_navroute to get navigation data
-    navroute_response = get_navroute()
-    navroute_data = json.loads(navroute_response)
-
-    # Add the navigation data to the entry
-    if "tool_response" in navroute_data:
-        entry["navroute"] = navroute_data["tool_response"]
 
     # Cleanup the entry
     keys_to_remove = [

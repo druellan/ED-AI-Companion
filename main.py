@@ -252,5 +252,4 @@ if __name__ == "__main__":
 
     log("info", "All systems ready!")
     asyncio.run(_speak_response("All systems ready."))
-
     asyncio.run(_monitor_journal())

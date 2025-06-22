@@ -17,13 +17,18 @@ from components.memory_manager import (
     get_recent_response_memory,
 )
 from components.mission_manager import get_missions
-from components.state_manager import get_state_all
+from components.state_manager import (
+    get_state_all,
+    get_navigation_status,
+    get_cargo_status,
+)
 from components.utils import json_to_compact_text, log
 
 # Config.py
 from config import (
     DEBUG_AI_PROMPT_DUMP,
-    JOURNAL_DIRECTORY,
+    DAMAGE_EFFECTS,
+    USER_INFORMATION,
     JOURNAL_EVENT_MEMORY,
     JOURNAL_RESPONSE_MEMORY,
     LLM_API_KEY,
@@ -33,6 +38,7 @@ from config import (
     LLM_MODEL_NAMES,
     LLM_USE_TOOLS,
     SYSTEM_PROMPT,
+    ASSISTANT_PROMPT,
     TOOLS_PROMPT,
     USER_PROMPT,
 )
@@ -73,22 +79,17 @@ def send_event_to_api(event_data, tool_response=None):
         timeout=20.0,
     )
 
-    # Rough token estimation
-    # Based on 4 chars per token (GPT uses slightly different rules but this is a rough estimate)
-    system_prompt_length = round(len(_get_system_prompt()) // 4)
-    user_prompt_length = round(len(_get_user_prompt(event_data)) // 4)
-    estimated_tokens = system_prompt_length + user_prompt_length
+    system_prompt = _get_system_prompt()
+    assistant_prompt = _get_assistant_prompt()
+    user_prompt = _get_user_prompt(event_data)
 
-    # Log the token estimation
-    if estimated_tokens > LLM_MAX_TOKENS_ALERT:
-        log("AI", f"WARNING: estimated tokens: {estimated_tokens}")
-
-    log("AI", f"Estimated tokens: {estimated_tokens}")
+    _log_token_estimation(system_prompt, user_prompt, assistant_prompt)
 
     # get ready the prompts
     messages: list[ChatCompletionMessageParam] = [
-        {"role": "system", "content": _get_system_prompt()},
-        {"role": "user", "content": _get_user_prompt(event_data)},
+        {"role": "system", "content": system_prompt},
+        {"role": "assistant", "content": assistant_prompt},
+        {"role": "user", "content": user_prompt},
     ]
 
     # Add tool response if it exists (this will be used for the new tool calling mechanism)
@@ -100,21 +101,14 @@ def send_event_to_api(event_data, tool_response=None):
 
     # Send the prompt content to a plain text file
     if DEBUG_AI_PROMPT_DUMP:
-        system_content = ""
-        user_content = ""
-        # Extract content based on role
-        for message in messages:
-            if message.get("role") == "system":
-                system_content = message.get("content", "")
-            elif message.get("role") == "user":
-                user_content = message.get("content", "")
-
         # debug to check how the last prompt has constructed
         with open("last_prompt.json", "w", encoding="utf-8") as file:
             file.write("--- SYSTEM ---\n")
-            file.write(str(system_content))
+            file.write(str(system_prompt))
+            file.write("--- ASSISTANT ---\n")
+            file.write(str(assistant_prompt))
             file.write("\n\n--- USER ---\n")
-            file.write(str(user_content))
+            file.write(str(user_prompt))
             file.write("\n")
 
     # get the AI response
@@ -151,7 +145,10 @@ def send_event_to_api(event_data, tool_response=None):
         else:
             # Otherwise, return the AI's original message content
             add_response_memory(ai_message_content)
-            return ai_message_content
+            post_processed_message_content = _process_response_artifacts(
+                ai_message_content
+            )
+            return post_processed_message_content
 
     except requests.exceptions.HTTPError as e:
         log("error", f"An API error occurred: {e}")
@@ -231,37 +228,35 @@ def _get_tool_response(ai_message_content):
 
 # Get the main prompt and enrich it with the current status
 def _get_system_prompt():
-    # Replace status placeholder in system prompt
-    import datetime
-
-    global_status = get_state_all()
-    recent_events = get_recent_event_memory(JOURNAL_EVENT_MEMORY)
-    recent_responses = get_recent_response_memory(JOURNAL_RESPONSE_MEMORY)
-    local_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    missions = get_missions()
-
-    try:
-        cargo_path = os.path.join(JOURNAL_DIRECTORY, "Cargo.json")
-        with open(cargo_path, "r") as file:
-            cargo = json.load(file)
-            cargo_inventory = json_to_compact_text(cargo.get("Inventory"))
-    except (FileNotFoundError, json.JSONDecodeError):
-        cargo_inventory = "[]"
-
-    system_prompt = (
-        SYSTEM_PROMPT.replace("{current_status}", json_to_compact_text(global_status))
-        .replace("{recent_events}", json_to_compact_text(recent_events))
-        .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
-        .replace("{current_missions}", json_to_compact_text(missions))
-        .replace("{recent_responses}", json_to_compact_text(recent_responses))
-        .replace("{local_time}", local_time)
-    )
+    system_prompt = SYSTEM_PROMPT.replace("{user_information}", USER_INFORMATION)
 
     if LLM_USE_TOOLS:
         system_prompt += TOOLS_PROMPT
         system_prompt += _get_available_tools()
 
-    # log("debug", system_prompt)
+    return system_prompt
+
+
+# Get the assistant prompts
+def _get_assistant_prompt():
+    global_status = get_state_all()
+    recent_events = get_recent_event_memory(JOURNAL_EVENT_MEMORY)
+    recent_responses = get_recent_response_memory(JOURNAL_RESPONSE_MEMORY)
+    navdata = get_navigation_status()
+    missions = get_missions()
+    cargo_inventory = get_cargo_status()
+
+    system_prompt = (
+        ASSISTANT_PROMPT.replace(
+            "{current_status}", json_to_compact_text(global_status)
+        )
+        .replace("{recent_events}", json_to_compact_text(recent_events))
+        .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
+        .replace("{current_missions}", json_to_compact_text(missions))
+        .replace("{recent_responses}", json_to_compact_text(recent_responses))
+        .replace("{navdata_status}", json_to_compact_text(navdata))
+    )
+
     return system_prompt
 
 
@@ -270,3 +265,87 @@ def _get_user_prompt(context):
     user_prompt = USER_PROMPT.replace("{event_new}", str(context))
 
     return user_prompt
+
+
+# Just a helper to calculate and log token estimations
+def _log_token_estimation(system_prompt, user_prompt, assistant_prompt):
+    # Rough token estimation
+    # Based on 3.5 chars per token (GPT uses slightly different rules but this is a rough estimate)
+    system_prompt_length = round(len(system_prompt) // 3.5)
+    assistant_prompt_length = round(len(assistant_prompt) // 3.5)
+    user_prompt_length = round(len(user_prompt) // 3.5)
+
+    estimated_tokens = (
+        system_prompt_length + user_prompt_length + assistant_prompt_length
+    )
+
+    # Log the token estimation
+    if estimated_tokens > LLM_MAX_TOKENS_ALERT:
+        log("AI", f"WARNING: estimated tokens: {estimated_tokens}")
+
+    log("AI", f"Estimated tokens: {estimated_tokens}")
+
+
+def _process_response_artifacts(response_content):
+    import random
+
+    if not DAMAGE_EFFECTS:
+        return response_content
+
+    state = get_state_all()
+    hull_health = state["HullHealth"]
+
+    # if hull_health > 0.3:
+    #     return response_content
+
+    def stutter_word(word):
+        # Repeat small words (less than 10 letters)
+        if len(word) < 9:
+            clean_word = word.rstrip(".,!?")
+            repeats = random.randint(2, 5)
+            result = clean_word
+            for _ in range(repeats - 1):
+                separator = "," if random.random() < 0.5 else ""
+                if (
+                    _ == repeats - 2
+                ):  # Last repetition uses original word with punctuation
+                    result += f"{separator}{word}"
+                else:
+                    result += f"{clean_word}"
+            return result
+        return word
+
+    def last_vowel_repeat(word):
+        # Define vowels
+        vowels = set("aiu")  # those seems to be the most efectives for TTS
+
+        # Clean the word from any punctuation for processing
+        clean_word = word.rstrip(".,!?")
+
+        # If the word ends in a vowel, repeat it 10-20 times
+        if clean_word and clean_word[-1] in vowels:
+            repeated_vowel = clean_word[-1] * random.randint(10, 20)
+            punct = word[len(clean_word) :]
+            return f"{clean_word}{repeated_vowel}{punct}"
+        return word
+
+    # Split content into words
+    words = response_content.split()
+    processed_words = []
+
+    stutter_chances = 0.1 * (1 - hull_health)
+    vowel_repeat_chances = 0.30 * (1 - hull_health)
+
+    for word in words:
+        # Apply random artifacts with different probabilities
+        if random.random() < stutter_chances:
+            processed_words.append(stutter_word(word))
+        elif random.random() < vowel_repeat_chances:
+            processed_words.append(last_vowel_repeat(word))
+        else:
+            processed_words.append(word)
+
+    # Join words back together
+    processed_content = " ".join(processed_words)
+
+    return processed_content

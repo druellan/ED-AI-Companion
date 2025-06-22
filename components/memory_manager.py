@@ -1,13 +1,14 @@
 ## components/memory_manager.py
 
 import json
+import os
 import datetime
 import nltk
 import string
 from collections import deque
 
 # Config.py
-from config import MEMORY_EVENTS
+from config import MEMORY_EVENTS, JOURNAL_DIRECTORY
 from components.utils import log
 
 event_memory = deque(maxlen=20000)

@@ -36,8 +36,7 @@ def parse(entry):
 
 CONTEXT = """
     We are targeting our next FSD destination.
-    If RemainingJumpsInRoute > 1 the target is a transition and the immediate jump towards our destination, otherwise, it is the final destination system.
-    If event=StartJump happened recently in the previous events, we are in the middle of a trip, auto-targetting our next destination. Be extra brief.
+   Ignore population numbers.
 """
 
 ## Example of the event ##

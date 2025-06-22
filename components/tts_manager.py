@@ -4,15 +4,18 @@ import os
 import time
 
 import edge_tts
+import numpy as np
 import pyttsx3
 import soundfile as sf
 from pedalboard import Chorus, Pedalboard, Reverb
 from pygame import mixer
 
 from components.utils import log
+from components.state_manager import get_state_all
 
 # Config.py
 from config import (
+    DAMAGE_EFFECTS,
     TTS_EDGE_PITCH,
     TTS_EDGE_RATE,
     TTS_EDGE_VOICE,
@@ -79,7 +82,7 @@ def _send_local_text_to_voice(text):
             mixer.quit()
 
             # Cleanup
-            os.remove(temp_file)
+            # os.remove(temp_file)
 
         except Exception as e:
             log("error", f"Windows TTS error: {str(e)}")
@@ -131,13 +134,42 @@ def _add_audio_effects(audio):
     # Load the audio file
     audio, sample_rate = sf.read("./tts-temp.mp3")
 
-    # Create an effects board
-    board = Pedalboard(
-        [
-            Reverb(room_size=0.1, wet_level=0.1),
-            Chorus(rate_hz=2.0, depth=0.25),  # Add chorus effect
-        ]
-    )
+    # Base effect levels
+    room_size = 0.1
+    wet_level = 0.1
+    rate_hz = 1.5
+    depth = 0.25
+
+    state = get_state_all()
+    hull_health = state["HullHealth"]
+
+    def _calculate_distortion(h):
+        if h >= 0.5:
+            return rate_hz
+        else:
+            normalized = 1 - (h / 0.5)
+            return 50 * np.power(normalized, 2) + rate_hz
+
+    # Create different effect intensities based on damage
+    if not DAMAGE_EFFECTS:
+        # Normal operation effects
+        board = Pedalboard(
+            [
+                Reverb(room_size=room_size, wet_level=wet_level),
+                Chorus(rate_hz=rate_hz, depth=depth),
+            ]
+        )
+    else:
+        # Damaged effects - more intense and glitchy
+        distortion_level = _calculate_distortion(hull_health)
+
+        board = Pedalboard(
+            [
+                # Basic effects with increased intensity
+                Reverb(room_size=room_size, wet_level=0.2),
+                Chorus(rate_hz=distortion_level, depth=depth),
+            ]
+        )
 
     # Apply effects
     effected = board(audio, sample_rate)

@@ -134,3 +134,45 @@ def get_state_all():
         data = {}
 
     return data
+
+
+def get_navigation_status():
+    navroute_file_path = os.path.join(JOURNAL_DIRECTORY, "NavRoute.json")
+    try:
+        with open(navroute_file_path, "r", encoding="utf-8") as f:
+            navroute_data = json.load(f)
+
+            if "Route" in navroute_data:
+                filtered_route = []
+                for system in navroute_data["Route"]:
+                    filtered_system = {
+                        "StarSystem": system["StarSystem"],
+                        "StarClass": system["StarClass"],
+                    }
+                    filtered_route.append(filtered_system)
+                return {"Route": filtered_route}
+            return {}
+
+    except FileNotFoundError:
+        log("error", f"NavRoute.json not found at {navroute_file_path}")
+        return json.dumps({"tool_response": "Error: NavRoute.json not found"})
+    except json.JSONDecodeError:
+        log("error", f"Error decoding NavRoute.json at {navroute_file_path}")
+        return json.dumps({"tool_response": "Error: Could not decode NavRoute.json"})
+    except Exception as e:
+        log("error", f"An unexpected error occurred in get_navroute: {e}")
+        return json.dumps(
+            {"tool_response": f"Error: An unexpected error occurred: {e}"}
+        )
+
+
+def get_cargo_status():
+    try:
+        cargo_path = os.path.join(JOURNAL_DIRECTORY, "Cargo.json")
+        with open(cargo_path, "r") as file:
+            cargo = json.load(file)
+            cargo_inventory = cargo.get("Inventory")
+    except (FileNotFoundError, json.JSONDecodeError):
+        cargo_inventory = "[]"
+
+    return cargo_inventory

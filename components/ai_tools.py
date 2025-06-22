@@ -9,39 +9,7 @@ from components.memory_manager import get_recent_event_memory
 
 from config import EDSM_API, JOURNAL_DIRECTORY
 from components.utils import log, json_to_compact_text
-from components.tts_manager import send_text_to_voice
 import os
-
-
-async def get_init_data():
-    """Retrieves information needed for ALL events."""
-
-    await send_text_to_voice("I'm using tools now, Commander.")
-
-    return ""
-
-
-def get_navroute():
-    """Retrieves the current navigation route from NavRoute.json and returns it in compact text format."""
-    log("info", "Tool: get_navroute called")
-    navroute_file_path = os.path.join(JOURNAL_DIRECTORY, "NavRoute.json")
-    try:
-        with open(navroute_file_path, "r", encoding="utf-8") as f:
-            navroute_data = json.load(f)
-
-        compact_navroute_data = json_to_compact_text(navroute_data)
-        return json.dumps({"tool_response": compact_navroute_data})
-    except FileNotFoundError:
-        log("error", f"NavRoute.json not found at {navroute_file_path}")
-        return json.dumps({"tool_response": "Error: NavRoute.json not found"})
-    except json.JSONDecodeError:
-        log("error", f"Error decoding NavRoute.json at {navroute_file_path}")
-        return json.dumps({"tool_response": "Error: Could not decode NavRoute.json"})
-    except Exception as e:
-        log("error", f"An unexpected error occurred in get_navroute: {e}")
-        return json.dumps(
-            {"tool_response": f"Error: An unexpected error occurred: {e}"}
-        )
 
 
 def get_market():
