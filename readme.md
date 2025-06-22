@@ -28,7 +28,7 @@ The idea is to provide audio feedback for the most common events in the game, su
 
 ### To make it work
 You might need Python 3.x installed in the system and a free [OpenRouter account](https://openrouter.ai/)
- - Clone or download the coe repository.
+ - Clone or download the repository.
  - Install the requirements with ```pip install -r requirements.txt```
  - Copy or rename the `config.py.example` file to `config.py`
  - Open the `config.py` and paste your OpenRouter key on the `LLM_API_KEY` variable. The script should work without any other change, but take a look at the settings in case you want to change something.
