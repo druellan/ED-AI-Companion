@@ -1,5 +1,5 @@
 # ED:AI Companion
-A collection of Python scripts to monitor the Elite Dangerous journal files and provide audio feedback using *OpenRouter* services.
+A collection of Python scripts to monitor the **Elite Dangerous** journal files and provide audio feedback using *OpenRouter* services.
 
 *This script is a work in progress, primarily for personal use, as a learning experience, and to have fun with LLMs and ED. For something more complete and polished, I recommend checking out the [COVAS:NEXT project](https://github.com/RatherRude/Elite-Dangerous-AI-Integration).*
 
