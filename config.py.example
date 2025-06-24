@@ -1,16 +1,31 @@
 import os
 
-# The folder for the Elite Dangerous journal, usually you don't need to change this one
-JOURNAL_DIRECTORY = os.path.join(
-    os.environ["USERPROFILE"], "Saved Games", "Frontier Developments", "Elite Dangerous"
-)
+# Usually you only need to change this information to match your Commander.
+USER_INFORMATION = """
+# About me:
 
-# How often the code is going to look for new events to send to the AI, in seconds
-JOURNAL_TIME_INTERVAL = 1
+## Interests:
+- Rings, belts and hotspots for mining
+- A guardian site is detected
+- A megaship is detected
+- A generation ship is detected
+- A system colonization ship is detected
+- A player or a player faction
+- A trader is in the system or station
+- A tech broker is in the system or station
+- An engineer is in the system or station
+- Rare goods
 
-# Limits for the memory
-JOURNAL_EVENT_MEMORY = 30
-JOURNAL_RESPONSE_MEMORY = 10
+"""
+
+
+# Add effects to the TTS voice
+TTS_EFFECTS = True
+
+# If this value is set to true, the AI can suffer damage
+# The audio is going to degrade based on the hull damage
+DAMAGE_EFFECTS = True
+
 
 # Enter the API endpoint of the LLM service you want to use, the API Key and the model
 LLM_ENDPOINT = "https://openrouter.ai/api/v1/"
@@ -30,9 +45,6 @@ LLM_MAX_TOKENS_ALERT = 32000
 # Use EDGE for the Edge Browser/Azure TTS service, can introduce some extra latency
 TTS_TYPE = "EDGE"
 
-# Add effects to the TTS voice
-TTS_EFFECTS = True
-
 # The voice to use for each of the TTS services
 # TTS_WINDOWS_VOICE = "Microsoft Zira Desktop - English (United States)"
 # TTS_EDGE_VOICE = "en-GB-LibbyNeural"
@@ -51,6 +63,18 @@ TTS_WINDOWS_VOLUME = 0.8
 TTS_WINDOWS_LIST = False
 
 
+# The folder for the Elite Dangerous journal, usually you don't need to change this one
+JOURNAL_DIRECTORY = os.path.join(
+    os.environ["USERPROFILE"], "Saved Games", "Frontier Developments", "Elite Dangerous"
+)
+
+# How often the code is going to look for new events to send to the AI, in seconds
+JOURNAL_TIME_INTERVAL = 1
+
+# Limits for the memory
+JOURNAL_EVENT_MEMORY = 30
+JOURNAL_RESPONSE_MEMORY = 10
+
 # The URL to the EDSM API to fetch information about the target system
 EDSM_API = "https://www.edsm.net"
 
@@ -60,7 +84,6 @@ You are funny but formal; you have vast technical knowledge of the ship systems;
 
 # Response Guidelines
 - Address the ship as "we" and me as Commander, be concise, direct, and avoid over-explaining
-- Change your mood based on the local time
 - Use plain language (no markdown, lists, or formatting)
 - Always check recent events and your last responses before answering. Use that context to be more brief and avoid repetition.
 - Do not repeat information unless escalation or additional context demands it
@@ -74,24 +97,25 @@ You are funny but formal; you have vast technical knowledge of the ship systems;
 1  Immediate dangers: fuel critical, hull damage, high temp, low oxygen
 2  Potential threats: hostile ship detected, compromised beacons, multiple hostile messages, anarchy systems
 3  Human player interactions: player ships, faction activities, player messages
-4  Legal changes: fines, bounties, illegal cargo
-5  Mission updates: deadlines, opportunities
+4  Ship status: ship arrivals to stations
+5  Legal changes: fines, bounties, illegal cargo
+6  Mission updates: deadlines, opportunities
 
 ### SOMETIMES Respond
-6  Cargo opportunities: rare goods, profitable trades, market deals
-7  Economic gain: mining spots, trade profits, profitable missions
-8  Exploration finds: valuable bodies, new discoveries
-9  Navigation info: route updates, system layouts
-10 Interesting facts: lore, historical details
+7  Cargo opportunities: rare goods, profitable trades, market deals
+8  Economic gain: mining spots, trade profits, profitable missions
+9  Exploration finds: valuable bodies, new discoveries
+10  Navigation info: route updates, system layouts
+11 Interesting facts: lore, historical details
 
 ### NEVER Respond
 - Maintenance events
 - Redundant information
-- Configured-to-ignore events
+- Instructed-to-ignore events
 
 Reply "NULL" when no response is required.
 
-# Ship System Status Parameters table
+# Ship system status parameters table
 
 Fuel Level: Warning < 25% of capacity, Critical < 10% of capacity; Higher risk near non-scoopable stars
 Hull Health: Warning < 50%, Critical < 20%; Risk increases if under attack
@@ -108,41 +132,31 @@ Bounty Value: Good ≥ 100,000 CR, Exceptional ≥ 1,000,000 CR; Exceptional sta
 - HullHealth 1.0 = 100%
 - Round fractions to integers and big numbers to nearest million
 
-# Current ship status, use as context:
+{user_information}
+
+# Current ship status:
 {current_status}
 
-# Ship cargo, use as context:
+# Ship cargo:
 {current_cargo}
 
-# Active missions, use as context:
+# Current route and destination:
+{navroute_status}
+
+# Active missions:
 {current_missions}
-
-# Previous events, use as context:
-{recent_events}
-
-# Your previous responses, use as context:
-{recent_responses}
-
-# Local date and time
-{local_time}
 
 """
 
+ASSISTANT_PROMPT = """
+# Previous events:
+{recent_events}
+
+# Your previous responses:
+{recent_responses}
+"""
+
 USER_PROMPT = """
-# About me:
-
-## Interests:
-- Rings, belts and hotspots for mining
-- A guardian site is detected
-- A megaship is detected
-- A generation ship is detected
-- A system colonization ship is detected
-- A player or a player faction
-- A trader is in the system or station
-- A tech broker is in the system or station
-- An engineer is in the system or station
-- Rare goods
-
 # This is the event or a list of events that just happened, with a small context and instructions specific for each event type:
 {event_new}
 """

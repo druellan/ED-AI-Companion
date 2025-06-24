@@ -52,7 +52,9 @@ def json_to_compact_text(data):
         ]
         return "|".join(parts)
     elif isinstance(data, list):
-        return "+".join(json_to_compact_text(item) for item in data if item is not None)
+        return "\n".join(
+            json_to_compact_text(item) for item in data if item is not None
+        )
     elif isinstance(data, bool):
         return "1" if data else "0"
     elif data is None:

@@ -1,3 +1,6 @@
+from components.utils import cleanup_event
+
+
 def parse(entry):
     # scan_stage = entry.get("ScanStage")
 
@@ -11,18 +14,19 @@ def parse(entry):
     # return False
 
     # Cleanup the entry
-    entry.pop("Faction", None)
-    entry.pop("TargetLocked", None)
-    entry.pop("ScanStage", None)
-    # entry.pop("Ship_Localised", None)
-    entry.pop("PilotName_Localised", None)
-
-    return entry
+    keys_to_remove = [
+        # "Faction",
+        "TargetLocked",
+        "ScanStage",
+        "PilotName_Localised",
+        "ship",
+        # "Ship_Localised"
+    ]
+    return cleanup_event(entry, keys_to_remove)
 
 
 CONTEXT = """
 We targeted a ship for inspection.
-Try not to repeat identical scans. Check the previous events.
 Notify only if the ship has a big bounty (> 400000 CR).
 Notify only if the ship HullHealth is low.
 Notify if legalStatus=wanted and PilotWank=dangerous or deadly or elite.

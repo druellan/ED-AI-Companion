@@ -1,14 +1,14 @@
 ## components/memory_manager.py
 
 import json
-import os
 import datetime
 import nltk
 import string
 from collections import deque
+from humanize import naturaldelta
 
 # Config.py
-from config import MEMORY_EVENTS, JOURNAL_DIRECTORY
+from config import MEMORY_EVENTS
 from components.utils import log
 
 event_memory = deque(maxlen=20000)
@@ -34,10 +34,18 @@ def add_event_memory(event_data):
 
 
 def get_recent_event_memory(count=None):
-    if count is None:
-        return list(event_memory)
+    current_time = datetime.datetime.utcnow()
+    events = list(event_memory)
+    for event in events:
+        if "timestamp" in event:
+            event_time = datetime.datetime.fromisoformat(event["timestamp"].rstrip("Z"))
+            time_diff = current_time - event_time
+            event["when"] = naturaldelta(time_diff) + " ago"
+            del event["timestamp"]
 
-    return list(event_memory)[-count:]
+    if count is None:
+        return events
+    return events[-count:]
 
 
 def init_response_memory():
@@ -51,7 +59,7 @@ def init_response_memory():
 
 
 def add_response_memory(response_string):
-    if response_string == "NULL":
+    if response_string.startswith("NULL"):
         return
 
     # Download stopwords if not already present
@@ -95,6 +103,17 @@ def add_response_memory(response_string):
 
 
 def get_recent_response_memory(count=None):
+    current_time = datetime.datetime.utcnow()
+    responses = list(response_memory)
+    for response in responses:
+        if "timestamp" in response:
+            response_time = datetime.datetime.fromisoformat(
+                response["timestamp"].rstrip("Z")
+            )
+            time_diff = current_time - response_time
+            response["when"] = naturaldelta(time_diff) + " ago"
+            del response["timestamp"]
+
     if count is None:
-        return list(response_memory)
-    return list(response_memory)[-count:]
+        return responses
+    return responses[-count:]

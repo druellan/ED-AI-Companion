@@ -254,7 +254,7 @@ def _get_assistant_prompt():
         .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
         .replace("{current_missions}", json_to_compact_text(missions))
         .replace("{recent_responses}", json_to_compact_text(recent_responses))
-        .replace("{navdata_status}", json_to_compact_text(navdata))
+        .replace("{navroute_status}", json_to_compact_text(navdata))
     )
 
     return system_prompt

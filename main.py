@@ -54,7 +54,7 @@ VERSION = "0.3.0"
 # Monitor the journal files for new events
 async def _monitor_journal():
     current_journal = get_latest_journal_file(JOURNAL_DIRECTORY)
-    impatient_counter = 0
+    idle_counter = 0
     if not current_journal:
         log("system", "No journal files found.")
         return
@@ -77,15 +77,20 @@ async def _monitor_journal():
 
             if new_lines:
                 await _process_journal_entries(new_lines)
-                impatient_counter = 0
+                idle_counter = 0
             else:
-                impatient_counter += 1
-                if impatient_counter == IDLE_TIMEOUT / JOURNAL_TIME_INTERVAL:
-                    impatient_counter = 0
+                idle_counter += 1
+                if idle_counter == IDLE_TIMEOUT / JOURNAL_TIME_INTERVAL:
+                    idle_counter = 0
                     response = send_event_to_api(IDLE_PROMPT)
+
                     if response:
-                        log("AI", response)
-                        await _speak_response(response)
+                        if response.startswith("NULL"):
+                            log("AI", "(AI dropped the response).")
+                        else:
+                            log("AI", response)
+                            await _speak_response(response)
+
                 await asyncio.sleep(JOURNAL_TIME_INTERVAL)
 
 
@@ -203,7 +208,7 @@ async def _process_event_batch(batch):
     response_text = send_event_to_api(final_string)
 
     if response_text:
-        if "NULL" in response_text:
+        if response_text.startswith("NULL"):
             log("AI", "(AI dropped the response).")
             return
 
