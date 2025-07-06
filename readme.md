@@ -12,7 +12,7 @@ The idea is to provide audio feedback for the most common events in the game, su
 * Each event can have a personalized parser that can be used to add more instructions, preprocess and enrich the information with web content and third-party APIs.
 * Grouping of consecutive events to send them in bulk to the AI.
 * Damage system, the more the ship is damaged, the more the AI voice degrades.
-* The AI can make use of tools; we are injecting them directly in the system prompt to bypass the restrictions free LLMs usually have, so results can vary.
+* The AI can make use of tools; not all the models support this, so, results can vary.
 * Memory bank:
   - `ship-state.json` - (fuel levels, last place visited, etc)
   - `missions_memory.json` - active missions
