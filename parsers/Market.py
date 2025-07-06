@@ -126,8 +126,8 @@ def parse(entry):
     return market_list
 
 
+DESCRIPTION = "We are looking at the buy/sell market."
 CONTEXT = """
-We are looking at the buy/sell market.
 Give me your impression about the market based on an average profit of the market.
 Advice about items that have good profit margins, but warn if they might be illegal on other markets.
 Don't mention the actual profit value.
@@ -139,7 +139,6 @@ Limpets are not considered a bug/sell good.
 - Moderate Profit – 1,000 < Profit ≤ 5,000 CR
 - Low/No Profit – 0 < Profit ≤ 1,000 CR
 - Loss – Profit ≤ 0 CR
-
 """
 
 # Report the top opportunities to buy and sell that have high proffit margins.

@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-We conducted a scientific research
-"""
+DESCRIPTION = "We conducted a scientific research"
+CONTEXT = """"""

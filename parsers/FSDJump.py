@@ -25,8 +25,8 @@ def parse(entry):
     return entry
 
 
+DESCRIPTION = "Our ship arrived to another system."
 CONTEXT = """
-Our ship just arrived to another system.
 If we arrived to the final destination:
 - Describe the system allegiance
 - Describe the system faction and system faction state. Note if I have reputation with the faction (bad, average, good, excellent)
@@ -34,7 +34,6 @@ If we arrived to the final destination:
 - Describe the system security level
 - Describe the system economy and population
 If this is a transition system:
-- Ignore.
-"""
+- Ignore."""
 
 # {'event': 'FSDJump', 'Taxi': False, 'StarSystem': 'V886 Centauri', 'SystemAddress': 2931071912299, 'SystemAllegiance': 'Independent', 'SystemEconomy_Localised': 'Refinery', 'SystemSecondEconomy_Localised': 'Extraction', 'SystemGovernment_Localised': 'Democracy', 'SystemSecurity_Localised': 'High Security', 'Population': 5328590, 'Body': 'V886 Centauri', 'BodyID': 0, 'BodyType': 'Star', 'JumpDist': 7.938, 'FuelUsed': 0.507692, 'FuelLevel': 31.492308, 'SystemFaction': {'Name': 'Law of Demeter', 'FactionState': 'Boom'}, 'Conflicts': [{'WarType': 'civilwar', 'Status': 'active', 'Faction1': {'Name': 'V886 Centauri Future', 'Stake': 'Holdstock Silo', 'WonDays': 2}, 'Faction2': {'Name': 'Bureau of V886 Centauri', 'Stake': 'Phillips Analytics Installation', 'WonDays': 0}}], 'my_reputation': [{'name': 'Sirius Corporation', 'reputation': 5.98735}, {'name': 'V886 Centauri Future', 'reputation': 9.9}, {'name': 'Tamaya Empire Group', 'reputation': 6.02}]}

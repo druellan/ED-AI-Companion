@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-We are no longer in danger.
-"""
+DESCRIPTION = "We are no longer in danger."
+CONTEXT = """"""

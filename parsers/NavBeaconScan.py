@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-We scanned a navigation beacon, revealing system data.
-"""
+DESCRIPTION = "We scanned a navigation beacon, revealing system data."
+CONTEXT = """"""

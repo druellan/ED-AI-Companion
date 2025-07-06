@@ -5,7 +5,6 @@ def parse(entry):
     return entry
 
 
+DESCRIPTION = "Some cargo has been ejected."
 CONTEXT = """
-Some cargo has been ejected.
-If the cargo is not "abandoned", notify me, otherwise, ignore the event.
-"""
+If the cargo is not "abandoned", notify me, otherwise, ignore the event."""

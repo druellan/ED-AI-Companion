@@ -2,10 +2,9 @@ def parse(entry):
     return entry
 
 
+DESCRIPTION = "We reached our supercruise destination."
 CONTEXT = """
-    We reached our supercruise destination.
-    Only notify in the threat levels are high.    
-"""
+    Only notify in the threat levels are high.    """
 # {'event': 'SupercruiseExit', 'Taxi': False, 'Multicrew': False, 'StarSystem': 'Morten-Marte', 'SystemAddress': 2008132129498, 'Body': 'James Sneddon', 'BodyID': 4, 'BodyType': 'Station'}
 # {'event': 'SupercruiseExit', 'Body': 'ER 8 6', 'BodyID': 54, 'BodyType': 'Planet'}
 

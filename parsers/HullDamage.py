@@ -9,9 +9,8 @@ def parse(entry):
     return clean_event
 
 
+DESCRIPTION = "Our hull has received some damage!"
 CONTEXT = """
-Our hull has received some damage!
-Only notify if the hull health is critically low.
-"""
+Only notify if the hull health is critically low."""
 
 ## { "timestamp":"2025-03-01T22:33:25Z", "event":"HullDamage", "Health":0.452574, "PlayerPilot":true, "Fighter":false }

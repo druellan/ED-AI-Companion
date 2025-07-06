@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-Friends list updated.
-"""
+DESCRIPTION = "Friends list updated."
+CONTEXT = """"""

@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-A SRV has been launched.
-"""
+DESCRIPTION = "A SRV has been launched."
+CONTEXT = """"""

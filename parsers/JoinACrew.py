@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-Joined a crew.
-"""
+DESCRIPTION = "Joined a crew."
+CONTEXT = """"""

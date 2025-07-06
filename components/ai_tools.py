@@ -178,7 +178,11 @@ def get_system_factions(system_name):
 
 
 def _get_available_tools():
-    tools_list = []
+    """
+    Returns a JSON string of OpenAI-compatible tool definitions for all public functions in this module.
+    Each tool includes its name, description (from docstring), and parameter schema (all strings, required).
+    """
+    tools = []
     for name, obj in inspect.getmembers(sys.modules[__name__]):
         if (
             inspect.isfunction(obj)
@@ -187,11 +191,30 @@ def _get_available_tools():
             and obj.__doc__
         ):
             description = obj.__doc__.strip()
-            signature = inspect.signature(obj)
-            params = ", ".join([param.name for param in signature.parameters.values()])
-            tools_list.append(f"{name}({params}) - {description}")
 
-    return "\n".join(tools_list)
+            signature = inspect.signature(obj)
+
+            params_schema = {"type": "object", "properties": {}, "required": []}
+            for param in signature.parameters.values():
+                param_name = param.name
+                # Treat as required unless has default or "optional" in name
+                is_required = True
+                params_schema["properties"][param_name] = {
+                    "type": "string",
+                    "description": f"Parameter '{param_name}' for {name}",
+                }
+                if is_required:
+                    params_schema["required"].append(param_name)
+            tool_def = {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": description,
+                    "parameters": params_schema,
+                },
+            }
+            tools.append(tool_def)
+    return json.dumps(tools, indent=2)
 
 
 # Example usage (for testing within ai_tools.py)

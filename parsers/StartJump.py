@@ -11,10 +11,9 @@ def parse(entry):
     return False
 
 
+DESCRIPTION = "We are jumping to another system."
 CONTEXT = """
-    We are jumping to another system.
-    It is important to check the remaining fuel.
-"""
+    It is important to check the remaining fuel."""
 
 # { "timestamp":"2025-02-17T01:19:15Z", "event":"StartJump", "JumpType":"Hyperspace", "Taxi":false, "StarSystem":"Gurughna", "SystemAddress":3382588773082, "StarClass":"K" }
 # { "timestamp":"2025-03-03T01:20:00Z", "event":"StartJump", "JumpType":"Supercruise", "Taxi":false }

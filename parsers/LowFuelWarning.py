@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-Low fuel warning triggered.
-"""
+DESCRIPTION = "Low fuel warning triggered."
+CONTEXT = """"""

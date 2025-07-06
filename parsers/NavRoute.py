@@ -28,12 +28,11 @@ def parse(entry):
     return navroute_content
 
 
+DESCRIPTION = "We just traced a new navigation route."
 CONTEXT = """
-    We just traced a new navigation route.
     The first entry is the current system.
     The last entry is the destination.
-    The rest are transition systems.
-"""
+    The rest are transition systems."""
 
 ## Example of the event ##
 ## { "timestamp":"2025-02-07T01:01:15Z", "event":"NavRoute", "Route":[

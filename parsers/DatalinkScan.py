@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-A datalink scan has been performed.
-"""
+DESCRIPTION = "A datalink scan has been performed."
+CONTEXT = """"""

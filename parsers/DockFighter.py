@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-A fighter has docked.
-"""
+DESCRIPTION = "A fighter has docked."
+CONTEXT = """"""

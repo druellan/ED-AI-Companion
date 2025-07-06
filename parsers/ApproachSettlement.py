@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-We are approaching a settlement
-"""
+DESCRIPTION = "We are approaching a settlement"
+CONTEXT = """"""

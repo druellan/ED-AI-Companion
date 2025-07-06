@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-Low oxygen warning cleared.
-"""
+DESCRIPTION = "Low oxygen warning cleared."
+CONTEXT = """"""

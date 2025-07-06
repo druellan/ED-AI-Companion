@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-Data has been scanned.
-"""
+DESCRIPTION = "Data has been scanned."
+CONTEXT = """"""

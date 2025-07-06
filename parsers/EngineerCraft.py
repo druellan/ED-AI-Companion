@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-We applied a modification to one of our modules.
-"""
+DESCRIPTION = "We applied a modification to one of our modules."
+CONTEXT = """"""

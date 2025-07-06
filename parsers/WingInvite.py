@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-We received an invitation from another player.
-"""
+DESCRIPTION = "We received an invitation from another player."
+CONTEXT = """"""

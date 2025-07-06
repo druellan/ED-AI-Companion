@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import sys
 
 from components.ai_interface import get_openrouter_rate_limits, send_event_to_api
 from components.memory_manager import (
@@ -47,6 +48,8 @@ from config import (
     TTS_WINDOWS_VOICE,
 )
 from parsers import EVENT_PARSERS
+from components.memory_manager import event_memory
+from config import MEMORY_EVENTS
 
 VERSION = "0.3.0"
 
@@ -118,7 +121,6 @@ async def _process_journal_entries(lines):
             log("debug", entry)
 
         update_state(entry)
-        add_event_memory(entry)
         update_missions(entry)
 
         # Add entry to current batch
@@ -140,9 +142,7 @@ async def _process_event_batch(batch):
     log("event", f"Processing batch of {len(batch)} events")
 
     # Clean up each entry in the batch
-    clean_batch = [
-        cleanup_event(entry, ["timestamp", "build", "SystemAddress"]) for entry in batch
-    ]
+    clean_batch = [cleanup_event(entry, ["build", "SystemAddress"]) for entry in batch]
 
     # Collect contexts and events separately
     contexts = {}
@@ -152,12 +152,21 @@ async def _process_event_batch(batch):
     # First pass: collect all contexts by event type
     for entry in clean_batch:
         event_type = entry.get("event")
+        event_description = ""
+        event_context = ""
 
         # Only process events that are in our EVENT_LIST
         if event_type in EVENT_LIST and event_type in EVENT_PARSERS:
-            context = EVENT_PARSERS[event_type].get("context", "")
-            if context and event_type not in contexts:
-                contexts[event_type] = context
+            parsed = EVENT_PARSERS[event_type]
+            event_description = parsed.get("description", "")
+            event_context = parsed.get("context", "")
+            if event_description and event_type not in contexts:
+                contexts[event_type] = {
+                    "description": event_description,
+                    "context": event_context,
+                }
+
+        add_event_memory(entry, event_description)
 
     # Second pass: process all events
     for entry in clean_batch:
@@ -188,8 +197,9 @@ async def _process_event_batch(batch):
     final_parts = []
 
     # Add all unique contexts first
-    for event_type, context in contexts.items():
-        final_parts.append(f"Context for event: {event_type}: {context}")
+    for event_type, data in contexts.items():
+        final_parts.append(f"Current event {event_type}: {data['description']}")
+        final_parts.append(f"Extended context: {data['context']}")
 
     # Add all event data
     final_parts.extend(event_strings)
@@ -241,6 +251,14 @@ if __name__ == "__main__":
     )
     os.system("")  # enable VT100 Escape Sequence for WINDOWS 10 Ver. 1607
 
+    # Check for --rebuildEventIndex argument
+    if "--rebuildEventIndex" in sys.argv:
+        from components.utils import rebuild_event_index
+
+        rebuild_event_index()
+        log("info", "Event index rebuilt.")
+        # sys.exit(0)
+
     log("info", f"Welcome to ED:AI Companion V{VERSION}, Commander")
     log("info", f"Main model to use: {LLM_MODEL_NAME}")
     get_openrouter_rate_limits()
@@ -249,6 +267,11 @@ if __name__ == "__main__":
         log("info", f"Text-to-Speech: type {TTS_TYPE} voice {TTS_WINDOWS_VOICE}")
     else:
         log("info", f"Text-to-Speech: type {TTS_TYPE} voice {TTS_EDGE_VOICE}")
+
+    log(
+        "info",
+        "If the event database gets corrupted, use --rebuildEventIndex to create a new one",
+    )
 
     init_state()
     init_event_memory()

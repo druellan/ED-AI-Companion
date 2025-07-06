@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-A promotion has occurred.
-"""
+DESCRIPTION = "A promotion has occurred."
+CONTEXT = """"""

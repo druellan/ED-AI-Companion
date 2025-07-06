@@ -52,8 +52,10 @@ def json_to_compact_text(data):
         ]
         return "|".join(parts)
     elif isinstance(data, list):
-        return "\n".join(
-            json_to_compact_text(item) for item in data if item is not None
+        return (
+            "["
+            + "|".join(json_to_compact_text(item) for item in data if item is not None)
+            + "]"
         )
     elif isinstance(data, bool):
         return "1" if data else "0"
@@ -93,3 +95,47 @@ def log(type_str, message):
     print(
         f"{COLOR.BRIGHT_BLACK}{superscript} {COLOR.END}{config['color']}{boxed_label} {message}{COLOR.END}"
     )
+
+
+def rebuild_event_index():
+    from components.memory_manager import event_memory
+    from config import MEMORY_EVENTS, JOURNAL_DIRECTORY
+    from components.utils import log
+
+    from parsers import EVENT_PARSERS
+
+    # Clear the event_memory deque
+    log("info", "Cleared event memory.")
+
+    # Find the 3 most recent journal files
+    import glob
+
+    journal_files = glob.glob(os.path.join(JOURNAL_DIRECTORY, "Journal*.log"))
+    journal_files.sort(key=os.path.getmtime, reverse=True)
+    recent_files = journal_files[:30][::-1]  # Reverse so oldest is first
+
+    log("info", f"Processing {len(recent_files)} most recent journal files.")
+
+    event_count = 0
+    for journal_file in recent_files:
+        log("info", f"Processing {journal_file}")
+        with open(journal_file, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    event = json.loads(line)
+                    event_type = event.get("event")
+                    if event_type in MEMORY_EVENTS:
+                        if event_type in EVENT_PARSERS:
+                            event["description"] = EVENT_PARSERS[event_type].get(
+                                "description", ""
+                            )
+
+                        event_memory.append(event)
+                        event_count += 1
+                except Exception as e:
+                    log("error", f"Failed to process line: {e}")
+
+    with open("event_memory.json", "w") as file:
+        json.dump(list(event_memory), file)
+
+    log("info", f"Total events processed: {event_count}")

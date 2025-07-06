@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-    A crew member quit and left our ship.
-"""
+DESCRIPTION = "A crew member quit and left our ship."
+CONTEXT = """"""

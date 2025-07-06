@@ -80,46 +80,68 @@ def add_states(status):
 
 
 def filter_state_events(entry):
-    filtered = {}
+    event = entry.get("event")
+    match event:
+        case "LoadGame":
+            return {
+                "Ship": entry.get("Ship"),
+                "ShipName": entry.get("ShipName"),
+                "FuelLevel": entry.get("FuelLevel"),
+                "FuelCapacity": entry.get("FuelCapacity"),
+                "Balance": entry.get("Credits"),
+            }
 
-    if entry.get("event") == "LoadGame":
-        filtered = {
-            "Ship": entry.get("Ship"),
-            "ShipName": entry.get("ShipName"),
-            "FuelLevel": entry.get("FuelLevel"),
-            "FuelCapacity": entry.get("FuelCapacity"),
-            "Balance": entry.get("Credits"),
-        }
-    if entry.get("event") == "Loadout":
-        filtered = {
-            "Ship": entry.get("Ship"),
-            "ShipName": entry.get("ShipName"),
-            "HullHealth": entry.get("HullHealth"),
-        }
-    if entry.get("event") == "ShipyardSwap":
-        filtered = {
-            "Ship": entry.get("ShipType"),
-            "ShipName": "",
-        }
-    if entry.get("event") == "Fuel":
-        filtered["FuelLevel"] = entry["Fuel"].get("FuelMain")
-        filtered["FuelReservoir"] = entry["Fuel"].get("FuelReservoir")
+        case "Loadout":
+            return {
+                "Ship": entry.get("Ship"),
+                "ShipName": entry.get("ShipName"),
+                "HullHealth": entry.get("HullHealth"),
+            }
 
-    if entry.get("event") == "ReservoirReplenished":
-        filtered["FuelLevel"] = entry.get("FuelMain")
-        filtered["FuelReservoir"] = entry.get("FuelReservoir")
+        case "ShipyardSwap":
+            return {
+                "Ship": entry.get("ShipType"),
+                "ShipName": "",
+            }
 
-    if entry.get("event") == "RepairAll":
-        filtered["HullHealth"] = 1
-    if entry.get("event") == "HullDamage":
-        filtered["HullHealth"] = entry.get("Health")
+        case "Fuel":
+            return {
+                "FuelLevel": entry["Fuel"].get("FuelMain"),
+                "FuelReservoir": entry["Fuel"].get("FuelReservoir"),
+            }
+        case "ReservoirReplenished":
+            return {
+                "FuelLevel": entry.get("FuelMain"),
+                "FuelReservoir": entry.get("FuelReservoir"),
+            }
+        case "RefuelAll":
+            current_state = get_state_all()
+            if "FuelMain" in current_state:
+                return {"FuelMain": current_state["FuelCapacity"]}
+            return {}
 
-    if entry.get("event") == "RefuelAll":
-        current_state = get_state_all()
-        if "FuelMain" in current_state:
-            filtered["FuelMain"] = current_state["FuelCapacity"]
+        case "RepairAll":
+            return {"HullHealth": 1}
+        case "HullDamage":
+            return {"HullHealth": entry.get("Health")}
 
-    return filtered
+        case "Docked":
+            return {"Docked": True, "onStation": entry.get("StationName")}
+        case "Undocked":
+            return {"Docked": False, "onStation": ""}
+        case "Touchdown":
+            return {
+                "Docked": True,
+                "onStation": entry.get("OnStation"),
+                "onPlanet": entry.get("onPlanet"),
+            }
+        case "Liftoff":
+            return {
+                "Docked": False,
+                "onStation": False,
+            }
+        case _:
+            return {}
 
 
 # Get all the information from the ship-state.json file

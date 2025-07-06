@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-We were demoted within our squadron.
-"""
+DESCRIPTION = "We were demoted within our squadron."
+CONTEXT = """"""

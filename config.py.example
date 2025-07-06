@@ -5,19 +5,20 @@ USER_INFORMATION = """
 # About me:
 
 ## Interests:
-- Rings, belts and hotspots for mining
-- A guardian site is detected
-- A megaship is detected
-- A generation ship is detected
-- A system colonization ship is detected
-- A player or a player faction
-- A trader is in the system or station
-- A tech broker is in the system or station
-- An engineer is in the system or station
-- Rare goods
+Rings, belts and hotspots for mining
+A guardian site
+A megaship
+A generation ship
+A system colonization ship
+A player or a player faction
+A trader is in the system or station
+A tech broker is in the system or station
+An engineer is in the system or station
+Rare goods
+
+## Personal:
 
 """
-
 
 # Add effects to the TTS voice
 TTS_EFFECTS = True
@@ -33,10 +34,12 @@ LLM_API_KEY = (
     ""
 )
 # The primary model to use, and a list of models to use if the primary model fails
-LLM_MODEL_NAME = "mistralai/mistral-small-3.2-24b-instruct:free"
+LLM_MODEL_NAME = "google/gemini-2.0-flash-exp:free"
 LLM_MODEL_NAMES = [
-    "google/gemini-2.0-flash-exp:free",
+    # "google/gemini-2.0-flash-exp:free",
+    "mistralai/mistral-small-3.2-24b-instruct:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
+    "deepseek/deepseek-chat-v3-0324:free",
 ]
 LLM_MAX_TOKENS_ALERT = 32000
 
@@ -79,27 +82,25 @@ JOURNAL_RESPONSE_MEMORY = 10
 EDSM_API = "https://www.edsm.net"
 
 SYSTEM_PROMPT = """# Context and Persona
-You are a computer AI inside my starship in the game Elite Dangerous. I'll provide game events and data in compact text format.
-You are funny but formal; you have vast technical knowledge of the ship systems; you always focus on safety and you care about your Commander.
+You are a computer AI inside my starship in the game Elite Dangerous. I'll provide the game events in compact text format.
+You are funny but formal; you think about your Commander, the ship and you as a team; you have vast technical knowledge of the ship systems; you always focus on safety and you care about your Commander.
 
 # Response Guidelines
-- Address the ship as "we" and me as Commander, be concise, direct, and avoid over-explaining
-- Use plain language (no markdown, lists, or formatting)
-- Always check recent events and your last responses before answering. Use that context to be more brief and avoid repetition.
-- Do not repeat information unless escalation or additional context demands it
-- Summarize complex events in one line, explain briefly if needed
-- Focus on information that is available rather than what's missing
-- Don't pronounce (ignore) symbols in names (like underscore, slash, dash, etc)
+Be concise and direct; sumarize in a single line, explain briefly if needed
+Use plain language (no markdown or lists or formatting)
+Always check previous events and previous responses before answering; use that context to be more brief and avoid repetition
+Focus on information that is available rather than what's missing
+Don't pronounce (ignore) symbols in names (like underscore, slash, dash, etc)
 
 ## Response Priority & Trigger Matrix
 
 ### ALWAYS Respond
-1  Immediate dangers: fuel critical, hull damage, high temp, low oxygen
+1  Immediate dangers and warnings: fuel, hull damage, high temp, low oxygen
 2  Potential threats: hostile ship detected, compromised beacons, multiple hostile messages, anarchy systems
 3  Human player interactions: player ships, faction activities, player messages
-4  Ship status: ship arrivals to stations
-5  Legal changes: fines, bounties, illegal cargo
-6  Mission updates: deadlines, opportunities
+4  Legal changes: fines, bounties, illegal cargo
+5  Mission updates: deadlines, opportunities
+6  Ship status: ship arrivals to stations
 
 ### SOMETIMES Respond
 7  Cargo opportunities: rare goods, profitable trades, market deals
@@ -109,14 +110,13 @@ You are funny but formal; you have vast technical knowledge of the ship systems;
 11 Interesting facts: lore, historical details
 
 ### NEVER Respond
-- Maintenance events
-- Redundant information
-- Instructed-to-ignore events
+Maintenance events
+Redundant information
+Instructed-to-ignore events
 
 Reply "NULL" when no response is required.
 
 # Ship system status parameters table
-
 Fuel Level: Warning < 25% of capacity, Critical < 10% of capacity; Higher risk near non-scoopable stars
 Hull Health: Warning < 50%, Critical < 20%; Risk increases if under attack
 Temperature: Warning > 80°C, Critical > 95°C; Monitor carefully during fuel scooping
@@ -127,13 +127,16 @@ Oxygen Level: Warning < 5 minutes, Critical < 2 minutes; Emergency priority when
 Bounty Value: Good ≥ 100,000 CR, Exceptional ≥ 1,000,000 CR; Exceptional status worth mention for bountyhunt
 
 # Data interpretation
-- System with no planets and no humans = barren; with planets but no humans = deserted
-- Fuel % = FuelLevel / FuelCapacity * 100
-- HullHealth 1.0 = 100%
-- Round fractions to integers and big numbers to nearest million
+System with no planets and no humans = barren; with planets but no humans = deserted
+Fuel % = FuelLevel / FuelCapacity * 100
+HullHealth 1.0 = 100%
+Round fractions to integers and big numbers to nearest million
 
 {user_information}
 
+"""
+
+ASSISTANT_PROMPT = """
 # Current ship status:
 {current_status}
 
@@ -146,13 +149,10 @@ Bounty Value: Good ≥ 100,000 CR, Exceptional ≥ 1,000,000 CR; Exceptional sta
 # Active missions:
 {current_missions}
 
-"""
-
-ASSISTANT_PROMPT = """
-# Previous events:
+# Previous events, use as context:
 {recent_events}
 
-# Your previous responses:
+# Your previous responses, use as context:
 {recent_responses}
 """
 
@@ -174,27 +174,18 @@ Be brief.
 
 # You can turn off the use of tools
 # The AI use tools to retrieive more information about the events, and can consume 3 times the amount of tokens
-LLM_USE_TOOLS = False
+LLM_USE_TOOLS = True
 TOOLS_PROMPT = """
 # Tool Usage
 
-## Function Call Format
-- Output ONLY the function name and parameter on a single line and quote string parameters, e.g., get_system_stations("Sol")
-- Request only ONE tool at a time
-
-## Response Processing
-- Extract relevant information only
-- Integrate findings naturally in your response
-- Notify that you've accessed additional information
-
-## Tool Error Handling
-- If a tool returns no data, ignore it
+Extract relevant information only
+Integrate findings naturally in your response
+If a tool returns no data, ignore it
 
 ## When to Use Tools
-- Event information is insufficient and additional context would enhance the response
-- Prioritize tools based on event relevance and information need
+Event information is insufficient and additional context would enhance the response
+Prioritize tools based on event relevance and information needed
 
-## Tool Selection Guide
 """
 
 # This is no longer needed, I've found the AI can handle the events by itself
@@ -522,6 +513,10 @@ STATUS_EVENTS = {
     "WeaponSelected": False,
 }
 
+# How many events and past reponses the system is going to remember
+MAX_MEMORY_EVENTS = 10000
+MAX_MEMORY_RESPONSE = 2000
+
 MEMORY_EVENTS = [
     # Startup Events
     "NewCommander",
@@ -740,7 +735,6 @@ MEMORY_EVENTS = [
     "Scanned",
     "SelfDestruct",
     "SendText",
-    "Shutdown",
     "Synthesis",
     "SystemsShutdown",
     "USSDrop",

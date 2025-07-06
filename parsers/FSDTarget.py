@@ -34,10 +34,9 @@ def parse(entry):
     return entry
 
 
+DESCRIPTION = "We are targeting our next FSD destination."
 CONTEXT = """
-    We are targeting our next FSD destination.
-   Ignore population numbers.
-"""
+   Ignore population numbers."""
 
 ## Example of the event ##
 ## { "timestamp":"2025-02-02T21:16:52Z", "event":"FSDTarget", "Name":"LP 470-65", "SystemAddress":672028370361, "StarClass":"M", "RemainingJumpsInRoute":1 }

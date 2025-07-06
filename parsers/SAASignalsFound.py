@@ -13,8 +13,7 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-    We detected hotspots for mining.
-"""
+DESCRIPTION = "We detected hotspots for mining."
+CONTEXT = """"""
 
 # {'event': 'SAASignalsFound', 'BodyName': 'Komovoy A 3 A Ring', 'SystemAddress': 11666876147129, 'BodyID': 15, 'Signals': [{'Type': 'LowTemperatureDiamond', 'Type_Localised': 'Low Temp. Diamonds', 'Count': 2}, {'Type': 'Opal', 'Type_Localised': 'Void Opal', 'Count': 1}, {'Type': 'Bromellite', 'Count': 2}], 'Genuses': []}

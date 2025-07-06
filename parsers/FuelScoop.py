@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-Fuel has been scooped.
-"""
+DESCRIPTION = "Fuel has been scooped."
+CONTEXT = """"""

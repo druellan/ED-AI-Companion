@@ -9,6 +9,5 @@ def parse(entry):
     return False
 
 
-CONTEXT = """
-Our ship's loadout information was updated, or we switched ships.
-"""
+DESCRIPTION = "Our ship's loadout information was updated, or we switched ships."
+CONTEXT = """"""

@@ -17,13 +17,14 @@ for filename in os.listdir(parsers_dir):
             module = importlib.import_module(f"parsers.{module_name}")
 
             # Check if the module has both parse function and CONTEXT
-            if hasattr(module, "parse") and hasattr(module, "CONTEXT"):
+            if hasattr(module, "parse") and hasattr(module, "DESCRIPTION"):
                 # Convert module_name to event name (e.g., 'receivetext' -> 'ReceiveText')
                 event_name = module_name
 
                 EVENT_PARSERS[event_name] = {
                     "function": module.parse,
                     "context": module.CONTEXT,
+                    "description": module.DESCRIPTION,
                 }
                 # log("info", f"Loaded parser for {event_name}")
 

@@ -8,11 +8,11 @@ from collections import deque
 from humanize import naturaldelta
 
 # Config.py
-from config import MEMORY_EVENTS
-from components.utils import log
+from config import MEMORY_EVENTS, MAX_MEMORY_EVENTS, MAX_MEMORY_RESPONSE
+from components.utils import log, json_to_compact_text
 
-event_memory = deque(maxlen=20000)
-response_memory = deque(maxlen=20000)
+event_memory = deque(maxlen=MAX_MEMORY_EVENTS)
+response_memory = deque(maxlen=MAX_MEMORY_RESPONSE)
 
 
 def init_event_memory():
@@ -23,11 +23,13 @@ def init_event_memory():
         pass
 
 
-def add_event_memory(event_data):
+def add_event_memory(event_data, description=False):
     # list of event allowed to be memorized
-
     if event_data["event"] in MEMORY_EVENTS:
-        event_data["timestamp"] = datetime.datetime.utcnow().isoformat() + "Z"
+        # event_data["timestamp"] = datetime.datetime.utcnow().isoformat() + "Z"
+        if description:
+            event_data["description"] = description
+
         event_memory.append(event_data)
         with open("event_memory.json", "w") as file:
             json.dump(list(event_memory), file)
@@ -35,17 +37,41 @@ def add_event_memory(event_data):
 
 def get_recent_event_memory(count=None):
     current_time = datetime.datetime.utcnow()
-    events = list(event_memory)
-    for event in events:
-        if "timestamp" in event:
-            event_time = datetime.datetime.fromisoformat(event["timestamp"].rstrip("Z"))
-            time_diff = current_time - event_time
-            event["when"] = naturaldelta(time_diff) + " ago"
-            del event["timestamp"]
+    transformed_events = []
+    for event in reversed(
+        event_memory
+    ):  # Iterate in reverse to get the most recent events first
+        transformed_event = event.copy()
 
-    if count is None:
-        return events
-    return events[-count:]
+        if "timestamp" in transformed_event:
+            event_time = datetime.datetime.fromisoformat(
+                transformed_event["timestamp"].rstrip("Z")
+            )
+            time_diff = current_time - event_time
+            transformed_event["when"] = naturaldelta(time_diff) + " ago"
+            del transformed_event["timestamp"]
+        transformed_events.append(transformed_event)
+
+        if count is not None and len(transformed_events) >= count:
+            break
+
+    return transformed_events
+
+
+def get_string_recent_event_memory(count=None):
+    recent_events = get_recent_event_memory(count)
+    event_list = ""
+
+    for event in recent_events:
+        if "when" in event:
+            event_list += f"{event['when']}, "
+            del event["when"]
+        if "description" in event:
+            event_list += f"{event['description']}|"
+            del event["description"]
+
+        event_list += json_to_compact_text(event) + "\n"
+    return event_list
 
 
 def init_response_memory():
@@ -105,6 +131,7 @@ def add_response_memory(response_string):
 def get_recent_response_memory(count=None):
     current_time = datetime.datetime.utcnow()
     responses = list(response_memory)
+    # responses.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
     for response in responses:
         if "timestamp" in response:
             response_time = datetime.datetime.fromisoformat(
@@ -117,3 +144,16 @@ def get_recent_response_memory(count=None):
     if count is None:
         return responses
     return responses[-count:]
+
+
+# returns a list of memory responses, but in this format: {time} ago | Message
+def get_string_recent_response_memory(count=None):
+    memory_list = get_recent_response_memory(count)
+    # memory_list.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
+    response_list = ""
+
+    for memory in memory_list:
+        if "when" in memory:
+            response_list += f"{memory['when']} | "
+        response_list += memory["response"] + "\n"
+    return response_list

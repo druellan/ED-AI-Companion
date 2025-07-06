@@ -2,6 +2,5 @@ def parse(entry):
     return entry
 
 
-CONTEXT = """
-    We requested a fleet carrier jump.
-"""
+DESCRIPTION = "We requested a fleet carrier jump."
+CONTEXT = """"""

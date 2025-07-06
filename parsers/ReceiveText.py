@@ -44,12 +44,11 @@ def parse(entry):
     return cleanup_event(entry, ["Channel", "From"])
 
 
+DESCRIPTION = "This message has been broadcasted on local space."
 CONTEXT = """
-This message has been broadcasted on local space.
 Don't read the message content, interpret the message based on "Message" (intention) and "Message_Localised" (content).
 Consider the previous message as context and to avoid repetition.
 Pay special attention to "$Pirate_ThreatenSpecific" messages.
-If you think the message is trivial (no risk, not relevant information provided), ignore the event completely.
-"""
+If you think the message is trivial (no risk, not relevant information provided), ignore the event completely."""
 # Don't read the message content, just interpret it.
 # { "timestamp":"2025-03-03T02:19:22Z", "event":"ReceiveText", "From":"$npc_name_decorate:#name=Pollux;", "From_Localised":"Pollux", "Message":"$Trader_OnEnemyShipDetection03;", "Message_Localised":"Oh no you don't!", "Channel":"npc" }
