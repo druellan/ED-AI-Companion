@@ -112,7 +112,7 @@ def send_event_to_api(event_data, tool_response=None, tool_call_id=None):
             },
             messages=messages,
             tools=tools,
-            temperature=0.1,
+            temperature=0.15,
         )
 
         if hasattr(ai_response, "error"):
