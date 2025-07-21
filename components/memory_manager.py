@@ -63,14 +63,21 @@ def get_string_recent_event_memory(count=None):
     event_list = ""
 
     for event in recent_events:
-        if "when" in event:
-            event_list += f"{event['when']}, "
-            del event["when"]
-        if "description" in event:
-            event_list += f"{event['description']}|"
-            del event["description"]
-
-        event_list += json_to_compact_text(event) + "\n"
+        # Extract and remove 'when' for timeframe
+        timeframe = event.pop("when", None)
+        # Extract and remove 'event' for event name
+        event_name = event.pop("event", None)
+        # Build the rest of the info as key=value pairs
+        info = json_to_compact_text(event)
+        # Compose the output line
+        line = ""
+        if timeframe:
+            line += f"{timeframe} | "
+        if event_name:
+            line += f"{event_name} | "
+        if info:
+            line += info
+        event_list += line.strip() + "\n"
     return event_list
 
 

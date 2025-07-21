@@ -1,7 +1,9 @@
 __pycache__
 config.py
 ship-state.json
-last_prompt.json
+debug.last_prompt.json
+debug.last_json_post.json
+persistent_memory.json
 event_memory.json
 missions_memory.json
 response_memory.json

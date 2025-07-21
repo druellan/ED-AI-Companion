@@ -1,227 +1,74 @@
 # components/ai_tools.py
-import inspect
 import json
-import sys
 
-import requests
+from tools.edsm_tools import EDSMAPI
+from tools.knowledge_tools import KnowledgeGraphManager
+from tools.journal_tools import JournalTools
+import inspect
+from pydantic import TypeAdapter
 
-from components.memory_manager import get_recent_event_memory
+# Registry of tool classes (add more as needed)
+TOOL_CLASSES = [EDSMAPI]
 
-from config import EDSM_API, JOURNAL_DIRECTORY
-from components.utils import log, json_to_compact_text
-import os
+# Registry of tool methods: {method_name: (class, method_name)}
+TOOL_METHODS = {}
+
+# Populate TOOL_METHODS with public methods from registered classes
+for cls in TOOL_CLASSES:
+    for attr_name in dir(cls):
+        if not attr_name.startswith("_"):
+            attr = getattr(cls, attr_name)
+            if callable(attr):
+                TOOL_METHODS[attr_name] = (cls, attr_name)
 
 
-def get_market():
-    """Retrieves a list of products from the local market, including prices and profit margins."""
-    log("info", "Tool: get_market called")
-    market_file_path = os.path.join(JOURNAL_DIRECTORY, "Market.json")
+def python_type_to_json_schema(py_type):
     try:
-        with open(market_file_path, "r", encoding="utf-8") as f:
-            market_data = json.load(f)
-
-        compact_market_data = json_to_compact_text(market_data)
-        return json.dumps({"tool_response": compact_market_data})
-    except FileNotFoundError:
-        log("error", f"Market.json not found at {market_file_path}")
-        return json.dumps({"tool_response": "Error: Market.json not found"})
-    except json.JSONDecodeError:
-        log("error", f"Error decoding Market.json at {market_file_path}")
-        return json.dumps({"tool_response": "Error: Could not decode Market.json"})
-    except Exception as e:
-        log("error", f"An unexpected error occurred in get_market: {e}")
-        return json.dumps(
-            {"tool_response": f"Error: An unexpected error occurred: {e}"}
-        )
-
-
-def get_events(event_name=None):
-    """Retrieves the last 100 events from the ship journal. If event_name is specified, it filters the events by that name."""
-    log("info", f"Tool: get_memory called with event_name='{event_name}'")
-
-    # Retrieve the last 100 events by default
-    recent_events = get_recent_event_memory(count=100)
-
-    if event_name:
-        filtered_events = [
-            event for event in recent_events if event.get("event") == event_name
-        ]
-        return json.dumps(filtered_events)
-    else:
-        return json.dumps(recent_events)
-
-
-def get_system(system_name):
-    """Gets EDSM system info for the given system name."""
-    # log("debug", f"Tool: get_system called with system_name={system_name}")
-
-    if not system_name:
-        log("error", "System name is required for get_system.")
-        return
-
-    params = {
-        "systemName": system_name,
-        "showPermit": 1,
-        "showInformation": 1,
-    }
-    try:
-        response = requests.get(EDSM_API + "/api-v1/system", params=params)
-        data = response.json()
-        return data
-
-    except requests.exceptions.RequestException as e:
-        log("error", f"Error fetching data for {system_name}: {e}")
-
-    return
-
-
-def get_system_bodies(system_name):
-    """Get bodies on a system."""
-    # log("debug", f"Tool: get_system_bodies called with system_name={system_name}")
-
-    if not system_name:
-        log("error", "System name is required for get_system_bodies.")
-        return
-
-    params = {"systemName": system_name}
-    try:
-        response = requests.get(EDSM_API + "/api-system-v1/bodies", params=params)
-        data = response.json()
-        return data
-
-    except requests.exceptions.RequestException as e:
-        log("error", f"Error fetching bodies data for {system_name}: {e}")
-
-    return
-
-
-def get_system_scan(system_name):
-    """Gets estimated value and valuable bodies in a system."""
-    if not system_name:
-        log("error", "System name is required for get_system_scan.")
-        return
-
-    params = {"systemName": system_name}
-    try:
-        response = requests.get(
-            EDSM_API + "/api-system-v1/estimated-value", params=params
-        )
-        data = response.json()
-        return data
-
-    except requests.exceptions.RequestException as e:
-        log("error", f"Error fetching scan data for {system_name}: {e}")
-
-    return
-
-
-def get_system_stations(system_name):
-    """Gets information about stations in a system."""
-
-    if not system_name:
-        log("error", "System name is required for get_system_stations.")
-        return
-
-    params = {"systemName": system_name}
-    try:
-        response = requests.get(EDSM_API + "/api-system-v1/stations", params=params)
-        data = response.json()
-        return data
-
-    except requests.exceptions.RequestException as e:
-        log("error", f"Error fetching station data for {system_name}: {e}")
-
-    return
-
-
-def get_station_market(system_name):
-    """Gets information about the market in a syste."""
-    # log("debug", f"Tool: get_station_market called with systemName={system_name}")
-
-    if not system_name:
-        log("error", "The market ID is mandatory.")
-        return
-
-    params = {"systemName": system_name}
-    try:
-        response = requests.get(
-            EDSM_API + "/api-system-v1/stations/market", params=params
-        )
-        data = response.json()
-        return data
-
-    except requests.exceptions.RequestException as e:
-        log("error", f"Error fetching market data for {system_name}: {e}")
-
-    return
-
-
-def get_system_factions(system_name):
-    """Gets information about the factions in a system."""
-    # log("debug", f"Tool: get_system_factions called with system_name={system_name}")
-
-    if not system_name:
-        log("error", "System name is required for get_system_factions.")
-        return
-
-    params = {"systemName": system_name}
-    try:
-        response = requests.get(EDSM_API + "/api-system-v1/factions", params=params)
-        log("debug", "response {response}")
-        data = response.json()
-        return data
-
-    except requests.exceptions.RequestException as e:
-        log("error", f"Error fetching factions data for {system_name}: {e}")
-
-    return
+        return TypeAdapter(py_type).json_schema()
+    except Exception:
+        return {"type": "string"}
 
 
 def _get_available_tools():
     """
-    Returns a JSON string of OpenAI-compatible tool definitions for all public functions in this module.
-    Each tool includes its name, description (from docstring), and parameter schema (all strings, required).
+    Returns a JSON string of OpenAI-compatible tool definitions for all public methods in registered tool classes.
     """
     tools = []
-    for name, obj in inspect.getmembers(sys.modules[__name__]):
-        if (
-            inspect.isfunction(obj)
-            and not inspect.isbuiltin(obj)
-            and not name.startswith("_")
-            and obj.__doc__
-        ):
-            description = obj.__doc__.strip()
 
-            signature = inspect.signature(obj)
+    for method_name, (cls, attr_name) in TOOL_METHODS.items():
+        method = getattr(cls, attr_name)
+        doc = method.__doc__ or ""
+        sig = inspect.signature(method)
 
-            params_schema = {"type": "object", "properties": {}, "required": []}
-            for param in signature.parameters.values():
-                param_name = param.name
-                # Treat as required unless has default or "optional" in name
-                is_required = True
-                params_schema["properties"][param_name] = {
-                    "type": "string",
-                    "description": f"Parameter '{param_name}' for {name}",
-                }
-                if is_required:
-                    params_schema["required"].append(param_name)
-            tool_def = {
+        params_schema = {"type": "object", "properties": {}, "required": []}
+        # skip 'self'
+        for param in list(sig.parameters.values())[1:]:
+            param_type = param.annotation
+            if param_type is inspect.Parameter.empty:
+                schema = {"type": "string"}
+            else:
+                schema = python_type_to_json_schema(param_type)
+            params_schema["properties"][param.name] = schema
+            params_schema["required"].append(param.name)
+
+        tools.append(
+            {
                 "type": "function",
                 "function": {
-                    "name": name,
-                    "description": description,
+                    "name": method_name,
+                    "description": doc.strip(),
                     "parameters": params_schema,
                 },
             }
-            tools.append(tool_def)
+        )
     return json.dumps(tools, indent=2)
 
 
-# Example usage (for testing within ai_tools.py)
-# if __name__ == "__main__":
-#     print("--- Available Tools ---")
-#     print(_get_available_tools())
-#     print("\n--- Example Tool Calls ---")
-#     # print(get_memory())
-#     # print(get_system("Sol"))
-#     # print(get_system_stations("Sol"))
+def call_tool_method(method_name, **args):
+    """
+    Call a registered tool method by name with the given arguments.
+    """
+    cls, attr_name = TOOL_METHODS[method_name]
+    instance = cls()
+    method = getattr(instance, attr_name)
+    return method(**args)

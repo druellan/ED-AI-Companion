@@ -4,11 +4,11 @@ A collection of Python scripts to monitor the **Elite Dangerous** journal files 
 *This script is a work in progress, primarily for personal use, as a learning experience, and to have fun with LLMs and ED. For something more complete and polished, I recommend checking out the [COVAS:NEXT project](https://github.com/RatherRude/Elite-Dangerous-AI-Integration).*
 
 ### Goal
-The idea is to provide audio feedback for the most common events in the game, such as jumps, combat, docking, etc., while using the small and *free* LLMs from *OpenRouter*. Unlike COVAS:NEXT, this project does not provide interactivity with the AI, and the intention is to have an intelligence that can provide really useful information to the player without any input.
+The idea is to provide audio feedback for the most common events in the game, such as jumps, combat, docking, etc., while using the small and free LLMs from *OpenRouter*. Unlike COVAS:NEXT, this project does not provide interactivity with the AI, and the intention is to have an intelligence that can provide really useful information to the player without any input.
 
 ### Features
 * A minimal but descriptive prompt tailored specifically for the game. The AI can decide to analyze the events and provide feedback or just remain silent.
-* Works well with free and small models.
+* Works well with **free** and small models (check the list inside the config.py for recommendations)
 * Each event can have a personalized parser that can be used to add more instructions, preprocess and enrich the information with web content and third-party APIs.
 * Grouping of consecutive events to send them in bulk to the AI.
 * Damage system, the more the ship is damaged, the more the AI voice degrades.
@@ -19,7 +19,7 @@ The idea is to provide audio feedback for the most common events in the game, su
   - `event_memory.json` - list of the last 20.000 events in the game
   - `response_memory.json` - list of the last 20.000 AI responses
 * Automatic retrieval of the last events and AI responses on each prompt. Access to 100 more via the tools.
-* Average token count of 3.000 tokens per API call, can vary depending the event and the size of the memory blob.
+* Average token count of 4.000 tokens per API call, can vary depending the event and the size of the memory blob.
 
 ### Demo Videos
 [Reacting to undock, new destination, radio chatter, and system arrival](https://vimeo.com/1074661030) (Edge TTS without audio filters)

@@ -23,6 +23,7 @@ def init_state():
             try:
                 entry = json.loads(line)
                 filtered_entry = filter_state_events(entry)
+
                 if filtered_entry:
                     add_states(filtered_entry)
             except json.JSONDecodeError:
@@ -39,20 +40,16 @@ def update_state(event):
     except (FileNotFoundError, json.JSONDecodeError):
         status = {}
 
-    filtered_status = {
-        "LegalState": status.get("LegalState"),
-        "Balance": status.get("Balance"),
-        "FuelLevel": status.get("Fuel", {}).get("FuelMain"),
-        "FuelReservoir": status.get("Fuel", {}).get("FuelReservoir"),
-    }
-
     filtered_event = filter_state_events(event)
 
     # Merge filtered status with filtered event
     if event:
-        filtered_status.update(filtered_event)
+        status.update(filtered_event)
 
-    add_states(filtered_status)
+    if "timestamp" in status:
+        del status["timestamp"]
+
+    add_states(status)
 
 
 # Get any information and save only information related to the ship-state.json file
@@ -86,8 +83,8 @@ def filter_state_events(entry):
             return {
                 "Ship": entry.get("Ship"),
                 "ShipName": entry.get("ShipName"),
-                "FuelLevel": entry.get("FuelLevel"),
-                "FuelCapacity": entry.get("FuelCapacity"),
+                "FuelLevel": round(entry.get("FuelLevel")),
+                "FuelCapacity": round(entry.get("FuelCapacity")),
                 "Balance": entry.get("Credits"),
             }
 
@@ -106,18 +103,16 @@ def filter_state_events(entry):
 
         case "Fuel":
             return {
-                "FuelLevel": entry["Fuel"].get("FuelMain"),
-                "FuelReservoir": entry["Fuel"].get("FuelReservoir"),
+                "FuelLevel": round(entry["Fuel"].get("FuelMain")),
             }
         case "ReservoirReplenished":
             return {
-                "FuelLevel": entry.get("FuelMain"),
-                "FuelReservoir": entry.get("FuelReservoir"),
+                "FuelLevel": round(entry.get("FuelMain")),
             }
         case "RefuelAll":
             current_state = get_state_all()
-            if "FuelMain" in current_state:
-                return {"FuelMain": current_state["FuelCapacity"]}
+            if "FuelLevel" in current_state:
+                return {"FuelLevel": current_state["FuelCapacity"]}
             return {}
 
         case "RepairAll":
@@ -140,6 +135,8 @@ def filter_state_events(entry):
                 "Docked": False,
                 "onStation": False,
             }
+        case "SupercruiseDestinationDrop":
+            return {"Current Threatlevel": entry.get("Threat")}
         case _:
             return {}
 
@@ -154,6 +151,11 @@ def get_state_all():
             data = json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         data = {}
+
+    # Calculate FuelLevel percentage if both FuelLevel and FuelCapacity exist
+    if "FuelLevel" in data and "FuelCapacity" in data and data["FuelCapacity"] > 0:
+        new_fuellevel = round((data["FuelLevel"] / data["FuelCapacity"]) * 100)
+        data["FuelLevel"] = f"{new_fuellevel}%"
 
     return data
 

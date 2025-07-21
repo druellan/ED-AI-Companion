@@ -1,5 +1,6 @@
 # components/ai_interface.py
 import json
+import time
 
 import requests
 from openai import OpenAI
@@ -22,6 +23,8 @@ from components.utils import json_to_compact_text, log
 # Config.py
 from config import (
     DEBUG_AI_PROMPT_DUMP,
+    DEBUG_AI_JSON_DUMP,
+    DEBUG_AI_RESPONSE_LOG,
     DAMAGE_EFFECTS,
     USER_INFORMATION,
     JOURNAL_EVENT_MEMORY,
@@ -33,6 +36,7 @@ from config import (
     LLM_MODEL_NAMES,
     LLM_USE_TOOLS,
     SYSTEM_PROMPT,
+    PAST_USER_PROMPT,
     ASSISTANT_PROMPT,
     TOOLS_PROMPT,
     USER_PROMPT,
@@ -63,7 +67,7 @@ def get_openrouter_rate_limits():
 
 
 # Send event data to the AI API
-def send_event_to_api(event_data, tool_response=None, tool_call_id=None):
+def send_event_to_api(event_data, tool_calls=None, tool_response=None):
     client = OpenAI(
         base_url=LLM_ENDPOINT,
         api_key=LLM_API_KEY,
@@ -75,6 +79,7 @@ def send_event_to_api(event_data, tool_response=None, tool_call_id=None):
     )
 
     system_prompt = _get_system_prompt()
+    past_user_prompt = _get_past_user_prompt()
     assistant_prompt = _get_assistant_prompt()
     user_prompt = _get_user_prompt(event_data)
     tools = False
@@ -82,64 +87,59 @@ def send_event_to_api(event_data, tool_response=None, tool_call_id=None):
     if LLM_USE_TOOLS:
         tools = json.loads(ai_tools._get_available_tools())
 
-    _log_token_estimation(system_prompt, user_prompt, assistant_prompt)
-
     # get ready the prompts
     messages = [
         {"role": "system", "content": system_prompt},
+        {"role": "user", "content": past_user_prompt},
         {"role": "assistant", "content": assistant_prompt},
-        {"role": "user", "content": user_prompt},
     ]
+
+    # If tool_calls are provided, add them to the last assistant message
+    if tool_calls and tool_response:
+        assistant_msg = next(
+            (msg for msg in reversed(messages) if msg["role"] == "assistant"), None
+        )
+        if assistant_msg is not None:
+            assistant_msg["tool_calls"] = tool_calls
+        for response in tool_response:
+            messages.append(response)
+    else:
+        # If this is not a tool, lets add the event
+        messages.append({"role": "user", "content": user_prompt})
 
     # Send the prompt content to a plain text file
     if DEBUG_AI_PROMPT_DUMP:
         # debug to check how the last prompt has constructed
-        with open("last_prompt.json", "w", encoding="utf-8") as file:
+        with open("debug.last_prompt.md", "w", encoding="utf-8") as file:
             file.write("--- SYSTEM ---\n")
             file.write(str(system_prompt))
-            file.write("--- ASSISTANT ---\n")
+            file.write("\n--- PAST USER ---\n")
+            file.write(str(past_user_prompt))
+            file.write("\n--- ASSISTANT ---\n")
             file.write(str(assistant_prompt))
-            file.write("\n\n--- USER ---\n")
+            file.write("\n--- USER ---\n")
             file.write(str(user_prompt))
             file.write("\n")
 
-    # get the AI response
-    try:
-        ai_response = client.chat.completions.create(
-            model=LLM_MODEL_NAME,
-            extra_body={
-                "models": LLM_MODEL_NAMES,
-            },
-            messages=messages,
-            tools=tools,
-            temperature=0.15,
-        )
+    if DEBUG_AI_JSON_DUMP:
+        # debug to check how the last prompt has constructed
+        with open("debug.last_json_post.json", "w", encoding="utf-8") as file:
+            # Write the JSON representation of the data sent to the API for debugging purposes
+            debug_data = {
+                "model": LLM_MODEL_NAME,
+                "extra_body": {
+                    "models": LLM_MODEL_NAMES,
+                },
+                "messages": messages,
+                "tools": tools,
+                "temperature": 0.15,
+            }
+            file.write(json.dumps(debug_data, indent=2))
 
-        if hasattr(ai_response, "error"):
-            log("error", f"API Error: {ai_response}")
-            return "API Error"
-
-        if not ai_response or not ai_response.choices:
-            log("error", "No response or choices from API")
-            return "Error: No response from AI"
-
-        message = ai_response.choices[0].message
-
-        # Unified final message handling
-        if hasattr(message, "tool_calls") and message.tool_calls:
-            for tool_call in message.tool_calls:
-                tool_name = tool_call.function.name
-                tool_args = json.loads(tool_call.function.arguments)
-                tool_response = getattr(ai_tools, tool_name)(**tool_args)
-                messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "name": tool_name,
-                        "content": json.dumps(tool_response),
-                    }
-                )
-            # Get the final answer after tool responses
+    # get the AI response with retry logic
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
             ai_response = client.chat.completions.create(
                 model=LLM_MODEL_NAME,
                 extra_body={
@@ -147,45 +147,81 @@ def send_event_to_api(event_data, tool_response=None, tool_call_id=None):
                 },
                 messages=messages,
                 tools=tools,
-                temperature=0.1,
+                temperature=0.15,
             )
-            final_message = ai_response.choices[0].message
-        else:
-            final_message = message
+            break
+        except Exception as e:
+            log(
+                "error",
+                f"An API error occurred (attempt {attempt + 1}/{max_retries}): {e}",
+            )
+            if attempt < max_retries - 1:
+                time.sleep(5)  # Wait 5 seconds before retrying
+            else:
+                return "Error communicating with AI API"
 
-        ai_message_content = final_message.content
-        add_response_memory(ai_message_content)
-        post_processed_message_content = _process_response_artifacts(ai_message_content)
-        return post_processed_message_content
+    _log_token_estimation(ai_response)
 
-    except requests.exceptions.HTTPError as e:
-        log("error", f"An API error occurred: {e}")
-        # Attempt to extract and print the JSON response if available
-        if hasattr(e, "response") and hasattr(e.response, "json"):
-            try:
-                error_json = e.response.json()
-                log(
-                    "error",
-                    f"API Error Response JSON: {json.dumps(error_json, indent=2)}",
-                )
-            except json.JSONDecodeError:
-                log("error", "Could not decode API error response as JSON.")
-        return "Error communicating with AI API"
+    if DEBUG_AI_RESPONSE_LOG:
+        log("DEBUG", ai_response)
+
+    if hasattr(ai_response, "error"):
+        log("error", f"API Error: {ai_response}")
+        return "API Error"
+
+    if not ai_response or not ai_response.choices:
+        log("error", "No response or choices from API")
+        return "Error: No response from AI"
+
+    message = ai_response.choices[0].message
+
+    # let's check for native refusal
+    if message.refusal:
+        return f"NULL. AI Refusal: {message.refusal}"
+
+    add_response_memory(message.content)
+
+    # Unified final message handling
+    if hasattr(message, "tool_calls") and message.tool_calls:
+        tool_response_all = list()
+        for tool_call in message.tool_calls:
+            log("Action", f"Execution tool: {tool_call.function.name}")
+            tool_name = tool_call.function.name
+            tool_args = json.loads(tool_call.function.arguments)
+            tool_response = ai_tools.call_tool_method(tool_name, **tool_args)
+            tool_response_all.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": tool_name,
+                    "content": json.dumps(tool_response),
+                }
+            )
+        # Get the final answer after tool responses
+        # remember to convert the API response
+        return send_event_to_api(
+            event_data,
+            tool_calls=[tc.model_dump() for tc in message.tool_calls],
+            tool_response=tool_response_all,
+        )
+
+    post_processed_message_content = _process_response_artifacts(message.content)
+    return post_processed_message_content
 
 
 # Get the main prompt and enrich it with the current status
 def _get_system_prompt():
     global_status = get_state_all()
+    cargo_inventory = get_cargo_status()
     navdata = get_navigation_status()
     missions = get_missions()
-    cargo_inventory = get_cargo_status()
 
     prompt = (
-        SYSTEM_PROMPT.replace("{current_status}", json_to_compact_text(global_status))
+        SYSTEM_PROMPT.replace("{user_information}", USER_INFORMATION)
+        .replace("{current_status}", json_to_compact_text(global_status))
         .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
         .replace("{current_missions}", json_to_compact_text(missions))
         .replace("{navroute_status}", json_to_compact_text(navdata))
-        .replace("{user_information}", USER_INFORMATION)
     )
 
     if LLM_USE_TOOLS:
@@ -194,26 +230,19 @@ def _get_system_prompt():
     return prompt
 
 
+# Get past user prompts (the events)
+def _get_past_user_prompt():
+    recent_events = get_string_recent_event_memory(JOURNAL_EVENT_MEMORY)
+
+    prompt = PAST_USER_PROMPT.replace("{recent_events}", (recent_events))
+    return prompt
+
+
 # Get the assistant prompts
 def _get_assistant_prompt():
-    global_status = get_state_all()
-    recent_events = get_string_recent_event_memory(JOURNAL_EVENT_MEMORY)
     recent_responses = get_string_recent_response_memory(JOURNAL_RESPONSE_MEMORY)
-    navdata = get_navigation_status()
-    missions = get_missions()
-    cargo_inventory = get_cargo_status()
 
-    prompt = (
-        ASSISTANT_PROMPT.replace(
-            "{current_status}", json_to_compact_text(global_status)
-        )
-        .replace("{recent_events}", (recent_events))
-        .replace("{current_cargo}", json_to_compact_text(cargo_inventory))
-        .replace("{current_missions}", json_to_compact_text(missions))
-        .replace("{recent_responses}", recent_responses)
-        .replace("{navroute_status}", json_to_compact_text(navdata))
-    )
-
+    prompt = ASSISTANT_PROMPT.replace("{recent_responses}", recent_responses)
     return prompt
 
 
@@ -225,22 +254,16 @@ def _get_user_prompt(context):
 
 
 # Just a helper to calculate and log token estimations
-def _log_token_estimation(system_prompt, user_prompt, assistant_prompt):
-    # Rough token estimation
-    # Based on 3.5 chars per token (GPT uses slightly different rules but this is a rough estimate)
-    system_prompt_length = round(len(system_prompt) // 3.5)
-    assistant_prompt_length = round(len(assistant_prompt) // 3.5)
-    user_prompt_length = round(len(user_prompt) // 3.5)
-
-    estimated_tokens = (
-        system_prompt_length + user_prompt_length + assistant_prompt_length
-    )
+def _log_token_estimation(response):
+    usage = response.usage
+    prompt_tokens = usage.prompt_tokens
+    total_tokens = usage.total_tokens
 
     # Log the token estimation
-    if estimated_tokens > LLM_MAX_TOKENS_ALERT:
-        log("AI", f"WARNING: estimated tokens: {estimated_tokens}")
+    if total_tokens > LLM_MAX_TOKENS_ALERT:
+        log("AI", f"WARNING: total tokens consumend: {total_tokens}")
 
-    log("AI", f"Estimated tokens: {estimated_tokens}")
+    log("AI", f"Prompt tokens: {prompt_tokens}. Total tokens: {total_tokens}")
 
 
 def _process_response_artifacts(response_content):

@@ -33,7 +33,7 @@ DESCRIPTION = "We have exited supercruise."
 CONTEXT = """
     Stars names are not important.
     Summarize any other information you might find relevant based on the ship status.
-    Check the previous SupercruiseDestinationDrop event for ThreatLevel."""
+    Check the current ThreatLevel."""
 # {'event': 'SupercruiseExit', 'Taxi': False, 'Multicrew': False, 'StarSystem': 'Morten-Marte', 'SystemAddress': 2008132129498, 'Body': 'James Sneddon', 'BodyID': 4, 'BodyType': 'Station'}
 # {'event': 'SupercruiseExit', 'Body': 'ER 8 6', 'BodyID': 54, 'BodyType': 'Planet'}
 

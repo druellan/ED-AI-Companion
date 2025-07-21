@@ -70,6 +70,7 @@ def log(type_str, message):
         "INFO": {"color": COLOR.BRIGHT_CYAN, "label": "INFO"},
         "EVENT": {"color": COLOR.BRIGHT_CYAN, "label": "EVENT"},
         "AI": {"color": COLOR.BRIGHT_YELLOW, "label": "AI"},
+        "ACTION": {"color": COLOR.BRIGHT_YELLOW, "label": "ACTION"},
         "DEBUG": {"color": COLOR.WHITE, "label": "DEBUG"},
         "ERROR": {"color": COLOR.RED, "label": "ERROR"},
         "SYSTEM": {
@@ -89,7 +90,7 @@ def log(type_str, message):
     superscript = timestamp.translate(SUPERSCRIPT)
 
     label_text = config["label"]
-    padded_text = label_text.ljust(6)
+    padded_text = label_text.ljust(7)
     boxed_label = f"❬{padded_text}❭"
 
     print(
@@ -139,3 +140,56 @@ def rebuild_event_index():
         json.dump(list(event_memory), file)
 
     log("info", f"Total events processed: {event_count}")
+
+
+def test_ai(message):
+    from components import ai_tools
+    from openai import OpenAI
+    from config import LLM_API_KEY, LLM_ENDPOINT, LLM_MODEL_NAME
+
+    client = OpenAI(
+        base_url=LLM_ENDPOINT,
+        api_key=LLM_API_KEY,
+        default_headers={
+            "X-Title": "ED:AI Companion",
+            "HTTP-Referer": "ED:AI Companion",
+        },
+        timeout=10.0,
+    )
+
+    tools = json.loads(ai_tools._get_available_tools())
+    # print(json.dumps(tools, indent=2))
+
+    messages = [
+        {"role": "system", "content": "Follow the instructions"},
+        # {"role": "assistant", "content": ""},
+        {"role": "user", "content": message},
+    ]
+
+    try:
+        ai_response = client.chat.completions.create(
+            model=LLM_MODEL_NAME,
+            messages=messages,
+            tools=tools,
+            temperature=0.15,
+        )
+    except Exception as e:
+        print(f"Error during AI request: {e}")
+        return
+
+    print(ai_response)
+
+    # Extracting the relevant details
+    response_content = ai_response.choices[0].message.content
+    function_call = ai_response.choices[0].message.function_call
+    tool_calls = ai_response.choices[0].message.tool_calls
+
+    # Printing the details
+    print("AI Response Content:")
+    print(response_content if response_content else "Empty or None")
+
+    print("\nFunction Call:")
+    print(function_call if function_call else "Empty or None")
+
+    print("\nTool Calls:")
+    print(tool_calls if tool_calls else "Empty or None")

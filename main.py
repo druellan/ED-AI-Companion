@@ -25,7 +25,7 @@ from components.utils import (
 # Config.py
 from config import (
     COMBAT_EVENTS,
-    DEBUG_EVENT_DUMP,
+    DEBUG_EVENT_LOG,
     DEBUG_PARSER_PROMPT,
     EXPLORATION_EVENTS,
     FLEET_CARRIER_EVENTS,
@@ -48,10 +48,8 @@ from config import (
     TTS_WINDOWS_VOICE,
 )
 from parsers import EVENT_PARSERS
-from components.memory_manager import event_memory
-from config import MEMORY_EVENTS
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 
 # Monitor the journal files for new events
@@ -89,7 +87,7 @@ async def _monitor_journal():
 
                     if response:
                         if response.startswith("NULL"):
-                            log("AI", "(AI dropped the response).")
+                            log("AI", f"(AI dropped the response: {response}).")
                         else:
                             log("AI", response)
                             await _speak_response(response)
@@ -117,7 +115,7 @@ async def _process_journal_entries(lines):
         if event_type in ["Fileheader", "Shutdown", "Music", "ShipLocker"]:
             continue
 
-        if DEBUG_EVENT_DUMP:
+        if DEBUG_EVENT_LOG:
             log("debug", entry)
 
         update_state(entry)
@@ -219,7 +217,7 @@ async def _process_event_batch(batch):
 
     if response_text:
         if response_text.startswith("NULL"):
-            log("AI", "(AI dropped the response).")
+            log("AI", f"(AI dropped the response: {response_text}).")
             return
 
         log("AI", f"{response_text}")
@@ -279,5 +277,12 @@ if __name__ == "__main__":
     init_missions()
 
     log("info", "All systems ready!")
-    asyncio.run(_speak_response("All systems ready."))
+    # asyncio.run(_speak_response("All systems ready."))
+
+    # from components.utils import test_ai
+
+    # test_ai(
+    #     "Call the `create_entities` function and create a new memory entity Shaun_Reich"
+    # )
+
     asyncio.run(_monitor_journal())
