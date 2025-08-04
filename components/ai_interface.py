@@ -1,17 +1,19 @@
 # components/ai_interface.py
 import json
 import time
+import re
 
 import requests
 from openai import OpenAI
 
 
 from components import ai_tools
+from components.memory_manager import add_response_memory
 from components.memory_manager import (
-    get_string_recent_event_memory,
-    add_response_memory,
-    get_string_recent_response_memory,
+    get_recent_event_memory,
+    get_recent_response_memory,
 )
+
 from components.mission_manager import get_missions
 from components.state_manager import (
     get_state_all,
@@ -29,6 +31,7 @@ from config import (
     USER_INFORMATION,
     JOURNAL_EVENT_MEMORY,
     JOURNAL_RESPONSE_MEMORY,
+    JOURNAIL_EVENT_MEMORY_FULL,
     LLM_API_KEY,
     LLM_ENDPOINT,
     LLM_MAX_TOKENS_ALERT,
@@ -36,8 +39,6 @@ from config import (
     LLM_MODEL_NAMES,
     LLM_USE_TOOLS,
     SYSTEM_PROMPT,
-    PAST_USER_PROMPT,
-    ASSISTANT_PROMPT,
     TOOLS_PROMPT,
     USER_PROMPT,
 )
@@ -79,20 +80,16 @@ def send_event_to_api(event_data, tool_calls=None, tool_response=None):
     )
 
     system_prompt = _get_system_prompt()
-    past_user_prompt = _get_past_user_prompt()
-    assistant_prompt = _get_assistant_prompt()
     user_prompt = _get_user_prompt(event_data)
+    assistant_history = _get_assistant_messages()
     tools = False
 
     if LLM_USE_TOOLS:
         tools = json.loads(ai_tools._get_available_tools())
 
-    # get ready the prompts
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": past_user_prompt},
-        {"role": "assistant", "content": assistant_prompt},
-    ]
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(assistant_history)
+    # messages.append({"role": "user", "content": user_prompt})
 
     # If tool_calls are provided, add them to the last assistant message
     if tool_calls and tool_response:
@@ -113,10 +110,10 @@ def send_event_to_api(event_data, tool_calls=None, tool_response=None):
         with open("debug.last_prompt.md", "w", encoding="utf-8") as file:
             file.write("--- SYSTEM ---\n")
             file.write(str(system_prompt))
-            file.write("\n--- PAST USER ---\n")
-            file.write(str(past_user_prompt))
+            # file.write("\n--- PAST USER ---\n")
+            # file.write(str(past_user_prompt))
             file.write("\n--- ASSISTANT ---\n")
-            file.write(str(assistant_prompt))
+            file.write(str(assistant_history))
             file.write("\n--- USER ---\n")
             file.write(str(user_prompt))
             file.write("\n")
@@ -179,7 +176,13 @@ def send_event_to_api(event_data, tool_calls=None, tool_response=None):
     if message.refusal:
         return f"NULL. AI Refusal: {message.refusal}"
 
-    add_response_memory(message.content)
+    # This is horrendous, but bear with me here, I'm going to fix it, I promise
+    timestamp = None
+    match = re.search(r"timestamp=([^\|]+)", event_data)
+    if match:
+        timestamp = match.group(1)
+
+    add_response_memory(message.content, timestamp)
 
     # Unified final message handling
     if hasattr(message, "tool_calls") and message.tool_calls:
@@ -187,6 +190,15 @@ def send_event_to_api(event_data, tool_calls=None, tool_response=None):
         for tool_call in message.tool_calls:
             log("Action", f"Execution tool: {tool_call.function.name}")
             tool_name = tool_call.function.name
+            # Check if tool_call.function.arguments is valid JSON before proceeding
+            try:
+                tool_args = json.loads(tool_call.function.arguments)
+            except Exception as e:
+                log(
+                    "error",
+                    f"Invalid JSON in tool_call.function.arguments for tool '{tool_name}': {tool_call.function.arguments} | Error: {e}",
+                )
+                continue  # Skip this tool call if arguments are invalid
             tool_args = json.loads(tool_call.function.arguments)
             tool_response = ai_tools.call_tool_method(tool_name, **tool_args)
             tool_response_all.append(
@@ -209,6 +221,43 @@ def send_event_to_api(event_data, tool_calls=None, tool_response=None):
     return post_processed_message_content
 
 
+def _get_assistant_messages():
+    events = get_recent_event_memory(JOURNAL_EVENT_MEMORY)
+    responses = get_recent_response_memory(JOURNAL_RESPONSE_MEMORY)
+
+    # Tag each with its type for later formatting
+    for e in events:
+        e["_role"] = "user"
+    for r in responses:
+        r["_role"] = "assistant"
+
+    # Merge and sort by timestamp (oldest first)
+    memories = events + responses
+    memories.sort(key=lambda x: x.get("timestamp", ""), reverse=False)
+
+    messages = []
+    for mem in memories:
+        if "timestamp" in mem:
+            del mem["timestamp"]
+
+        if mem["_role"] == "user":
+            event_name = mem.get("event", "")
+            description = mem.get("description", "")
+            content_event = f"Event: {event_name}"
+            content_event += f" | {description}"
+            if JOURNAIL_EVENT_MEMORY_FULL:
+                mem_clean = dict(mem)
+                for key in ["event", "_role", "when"]:
+                    mem_clean.pop(key, None)
+                content_event += f" | {json_to_compact_text(mem_clean)}"
+        else:
+            content_event = mem.get("response", "")
+
+        content = f"{mem['when']} | {content_event}"
+        messages.append({"role": mem["_role"], "content": content})
+    return messages
+
+
 # Get the main prompt and enrich it with the current status
 def _get_system_prompt():
     global_status = get_state_all()
@@ -227,22 +276,6 @@ def _get_system_prompt():
     if LLM_USE_TOOLS:
         prompt += TOOLS_PROMPT
 
-    return prompt
-
-
-# Get past user prompts (the events)
-def _get_past_user_prompt():
-    recent_events = get_string_recent_event_memory(JOURNAL_EVENT_MEMORY)
-
-    prompt = PAST_USER_PROMPT.replace("{recent_events}", (recent_events))
-    return prompt
-
-
-# Get the assistant prompts
-def _get_assistant_prompt():
-    recent_responses = get_string_recent_response_memory(JOURNAL_RESPONSE_MEMORY)
-
-    prompt = ASSISTANT_PROMPT.replace("{recent_responses}", recent_responses)
     return prompt
 
 

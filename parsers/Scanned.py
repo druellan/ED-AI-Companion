@@ -2,8 +2,9 @@ def parse(entry):
     return entry
 
 
-DESCRIPTION = "A ship scanned us."
+DESCRIPTION = "A ship scanned us"
 CONTEXT = """
-Inform me bout the type of scan.
-Check immediate previous events for a "$Pirate_LargeCargo" message, that might be the ship scanning us."""
+Inform me bout the type of scan
+Check immediate previous events for a "$Pirate_LargeCargo" message, that might be the ship scanning us
+Check pilot name in the history, retrieve ship information"""
 # { "timestamp":"2025-03-15T16:33:44Z", "event":"Scanned", "ScanType":"Cargo" }

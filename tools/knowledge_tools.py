@@ -67,7 +67,7 @@ class KnowledgeGraphManager:
         with open(self.memory_file_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
 
-    def create_entities(self, params: dict) -> list:
+    def memory_create_entities(self, params: dict) -> list:
         """
         Create multiple new entities in the knowledge graph
         Expects: {"entities": [ ... ]}
@@ -80,7 +80,7 @@ class KnowledgeGraphManager:
         self._save_graph(graph)
         return new_entities
 
-    def create_relations(self, params: dict) -> list:
+    def memory_create_relations(self, params: dict) -> list:
         """
         Create multiple new relations between entities in the knowledge graph. Relations should be in active voice
         Expects: {"relations": [ ... ]}
@@ -97,7 +97,7 @@ class KnowledgeGraphManager:
         self._save_graph(graph)
         return new_relations
 
-    def add_observations(self, params: dict) -> list:
+    def memory_add_observations(self, params: dict) -> list:
         """
         Add new observations to existing entities in the knowledge graph
         Expects: {"observations": [ ... ]}
@@ -119,7 +119,7 @@ class KnowledgeGraphManager:
         self._save_graph(graph)
         return results
 
-    def delete_entities(self, params: dict) -> None:
+    def memory_delete_entities(self, params: dict) -> None:
         """
         Delete multiple entities and their associated relations from the knowledge graph
         Expects: {"entity_names": [ ... ]}
@@ -136,7 +136,7 @@ class KnowledgeGraphManager:
         ]
         self._save_graph(graph)
 
-    def delete_observations(self, params: dict) -> None:
+    def memory_delete_observations(self, params: dict) -> None:
         """
         Delete specific observations from entities in the knowledge graph
         Expects: {"deletions": [ ... ]}
@@ -153,7 +153,7 @@ class KnowledgeGraphManager:
                 ]
         self._save_graph(graph)
 
-    def delete_relations(self, params: dict) -> None:
+    def memory_delete_relations(self, params: dict) -> None:
         """
         Delete multiple relations from the knowledge graph"
         Expects: {"relations": [ ... ]}
@@ -170,14 +170,14 @@ class KnowledgeGraphManager:
         ]
         self._save_graph(graph)
 
-    def read_graph(self, params: dict = None) -> KnowledgeGraph:
+    def memory_read_graph(self, params: dict = None) -> KnowledgeGraph:
         """
         Read the entire knowledge graph.
         Expects: {} (no parameters needed)
         """
         return self._load_graph()
 
-    def search_nodes(self, params: dict) -> KnowledgeGraph:
+    def memory_search_nodes(self, params: dict) -> KnowledgeGraph:
         """
         Search for nodes in the knowledge graph based on a query
         Expects: {"query": "..."}
@@ -200,7 +200,7 @@ class KnowledgeGraphManager:
         ]
         return {"entities": filtered_entities, "relations": filtered_relations}
 
-    def open_nodes(self, params: dict) -> KnowledgeGraph:
+    def memory_open_nodes(self, params: dict) -> KnowledgeGraph:
         """
         Open specific nodes in the knowledge graph by their names
         Expects: {"names": [ ... ]}

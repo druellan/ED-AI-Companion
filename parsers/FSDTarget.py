@@ -36,7 +36,8 @@ def parse(entry):
 
 DESCRIPTION = "We are targeting our next FSD destination."
 CONTEXT = """
-   Ignore population numbers."""
+   Ignore population numbers.
+   Check previous events to see if we are in the middle of a route, if true: skip responses unless you see dangers and remarkable information"""
 
 ## Example of the event ##
 ## { "timestamp":"2025-02-02T21:16:52Z", "event":"FSDTarget", "Name":"LP 470-65", "SystemAddress":672028370361, "StarClass":"M", "RemainingJumpsInRoute":1 }

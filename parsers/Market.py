@@ -79,7 +79,7 @@ def parse(entry):
             "Profit": entry.get("MeanPrice", 0) - entry.get("BuyPrice", 0),
         }
         for entry in items
-        if entry.get("Rare") is True and entry.get("Producer") is True
+        if entry.get("Rare") is True and entry.get("Demand", 0) > 0
     ]
 
     sell_goods = [
@@ -129,9 +129,9 @@ def parse(entry):
 DESCRIPTION = "We are looking at the buy/sell market."
 CONTEXT = """
 Give me your impression about the market based on an average profit of the market.
-Advice about items that have good profit margins, but warn if they might be illegal on other markets.
+Advice about items that have high profit margins, but warn if they might be illegal on other markets.
 Don't mention the actual profit value.
-Limpets are not considered a bug/sell good.
+Limpets are not considered a buy/sell good.
 
 ## Market value
 - Exceptional Profit – Profit > 10,000 CR
